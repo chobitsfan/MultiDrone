@@ -85,4 +85,17 @@ public class BtnAct : MonoBehaviour
         byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.SET_MODE, cmd);
         sock.SendTo(data, ep);
     }
+
+    public void DisarmClick()
+    {
+        MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+        {
+            command = (ushort)MAVLink.MAV_CMD.COMPONENT_ARM_DISARM,
+            target_system = 0,
+            param1 = 0,
+            param2 = 21196
+        };
+        byte[] data = mavlinkParse.GenerateMAVLinkPacket20(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+        sock.SendTo(data, ep);
+    }
 }
