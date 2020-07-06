@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class BtnAct : MonoBehaviour
 {
+    public GameWorld gameWorld;
     MAVLink.MavlinkParse mavlinkParse = new MAVLink.MavlinkParse();
     Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
     IPEndPoint ep = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 17500); 
@@ -96,6 +97,32 @@ public class BtnAct : MonoBehaviour
             param2 = 21196
         };
         byte[] data = mavlinkParse.GenerateMAVLinkPacket20(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+        sock.SendTo(data, ep);
+    }
+
+    public void UpClick()
+    {
+        MAVLink.mavlink_set_position_target_local_ned_t cmd = new MAVLink.mavlink_set_position_target_local_ned_t
+        {
+            target_system = (byte)gameWorld.TargetID,
+            coordinate_frame = (byte)MAVLink.MAV_FRAME.LOCAL_OFFSET_NED,
+            type_mask = 0xff8,
+            z = -0.5f
+        };
+        byte[] data = mavlinkParse.GenerateMAVLinkPacket20(MAVLink.MAVLINK_MSG_ID.SET_POSITION_TARGET_LOCAL_NED, cmd);
+        sock.SendTo(data, ep);
+    }
+
+    public void DownClick()
+    {
+        MAVLink.mavlink_set_position_target_local_ned_t cmd = new MAVLink.mavlink_set_position_target_local_ned_t
+        {
+            target_system = (byte)gameWorld.TargetID,
+            coordinate_frame = (byte)MAVLink.MAV_FRAME.LOCAL_OFFSET_NED,
+            type_mask = 0xff8,
+            z = 0.5f
+        };
+        byte[] data = mavlinkParse.GenerateMAVLinkPacket20(MAVLink.MAVLINK_MSG_ID.SET_POSITION_TARGET_LOCAL_NED, cmd);
         sock.SendTo(data, ep);
     }
 }
