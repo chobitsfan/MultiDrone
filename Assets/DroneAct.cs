@@ -8,6 +8,7 @@ using System.Net.Sockets;
 public class DroneAct : MonoBehaviour
 {
     public int DroneID;
+    public GameObject Propeller;
     //public GameWorld gameWorld;
     //public UnityEngine.UI.Text StatusText;
     Camera cam;
@@ -16,6 +17,8 @@ public class DroneAct : MonoBehaviour
     Socket sock;
     bool selected = false;
     IPEndPoint myproxy;
+    uint apm_mode;
+    bool armed = false;
     static Material lineMaterial;
     // Start is called before the first frame update
     void Start()
@@ -51,7 +54,17 @@ public class DroneAct : MonoBehaviour
                     var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
                     Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
                 }
+                else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
+                {
+                    var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
+                    apm_mode = heartbeat.custom_mode;
+                    if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0) armed = false; else armed = true;
+                }
             }
+        }
+        if (armed)
+        {
+            Propeller.transform.Rotate(0, 3, 0, Space.Self);
         }
     }
 
@@ -101,10 +114,7 @@ public class DroneAct : MonoBehaviour
     private void OnGUI()
     {
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
-        if (selected)
-            GUI.Label(new Rect(pos.x - 15, Screen.height - pos.y, 50, 50), "MAV" + DroneID);
-        else
-            GUI.Label(new Rect(pos.x - 15, Screen.height - pos.y, 50, 50), "mav" + DroneID);
+        GUI.Label(new Rect(pos.x, Screen.height - pos.y + 10, 70, 50), "MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode);
     }
     
     static void CreateLineMaterial()
@@ -140,7 +150,7 @@ public class DroneAct : MonoBehaviour
         GL.Begin(GL.LINES);
         GL.Color(Color.blue);
         GL.Vertex3(0, 0, 0);
-        GL.Vertex3(-2, 0, 0);
+        GL.Vertex3(-0.5f, 0, 0);
 
         GL.End();
         GL.PopMatrix();
