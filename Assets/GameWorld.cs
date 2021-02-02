@@ -18,7 +18,7 @@ public class GameWorld : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             //Debug.Log("escape pressed");
-            StatusText.text = "All MAV selected";
+            StatusText.text = "all MAV selected";
             TargetID = 0;
         }
     }

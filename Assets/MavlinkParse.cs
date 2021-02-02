@@ -118,6 +118,73 @@ public partial class MAVLink
             }
         }
 
+        public MAVLinkMessage ReadPacket(byte[] buffer)
+        {
+            int readcount = 0;
+
+            while (readcount <= MAVLink.MAVLINK_MAX_PACKET_LEN)
+            {
+                // read STX byte
+
+                if (buffer[0] == MAVLink.MAVLINK_STX || buffer[0] == MAVLINK_STX_MAVLINK1)
+                    break;
+
+                readcount++;
+            }
+
+            if (readcount >= MAVLink.MAVLINK_MAX_PACKET_LEN)
+            {
+                throw new InvalidDataException("No header found in data");
+            }
+
+            var headerlength = buffer[0] == MAVLINK_STX ? MAVLINK_CORE_HEADER_LEN : MAVLINK_CORE_HEADER_MAVLINK1_LEN;
+            var headerlengthstx = headerlength + 1;
+
+            // read header
+
+            // packet length
+            int lengthtoread = 0;
+            if (buffer[0] == MAVLINK_STX)
+            {
+                lengthtoread = buffer[1] + headerlengthstx + 2 - 2; // data + header + checksum - magic - length
+                if ((buffer[2] & MAVLINK_IFLAG_SIGNED) > 0)
+                {
+                    lengthtoread += MAVLINK_SIGNATURE_BLOCK_LEN;
+                }
+            }
+            else
+            {
+                lengthtoread = buffer[1] + headerlengthstx + 2 - 2; // data + header + checksum - U - length    
+            }
+
+            //read rest of packet
+
+            // resize the packet to the correct length
+            Array.Resize<byte>(ref buffer, lengthtoread + 2);
+
+            MAVLinkMessage message = new MAVLinkMessage(buffer);
+
+            // calc crc
+            ushort crc = MavlinkCRC.crc_calculate(buffer, buffer.Length - 2);
+
+            // calc extra bit of crc for mavlink 1.0+
+            if (message.header == MAVLINK_STX || message.header == MAVLINK_STX_MAVLINK1)
+            {
+                crc = MavlinkCRC.crc_accumulate(MAVLINK_MESSAGE_INFOS.GetMessageInfo(message.msgid).crc, crc);
+            }
+
+            // check crc
+            if ((message.crc16 >> 8) != (crc >> 8) ||
+                      (message.crc16 & 0xff) != (crc & 0xff))
+            {
+                badCRC++;
+                // crc fail
+                return null;
+            }
+
+            return message;
+        }
+
         public MAVLinkMessage ReadPacket(Stream BaseStream)
         {
             byte[] buffer = new byte[MAVLink.MAVLINK_MAX_PACKET_LEN];

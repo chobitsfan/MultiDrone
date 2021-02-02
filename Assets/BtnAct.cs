@@ -55,7 +55,7 @@ public class BtnAct : MonoBehaviour
     {
         MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
         {
-            target_system = 0,
+            target_system = (byte)gameWorld.TargetID,
             command = (ushort)MAVLink.MAV_CMD.COMPONENT_ARM_DISARM,
             param1 = 1
         };
@@ -67,7 +67,7 @@ public class BtnAct : MonoBehaviour
     {
         MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
         {
-            target_system = 0,
+            target_system = (byte)gameWorld.TargetID,
             command = (ushort)MAVLink.MAV_CMD.TAKEOFF,
             param7 = 0.7f
         };
