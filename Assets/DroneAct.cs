@@ -130,12 +130,12 @@ public class DroneAct : MonoBehaviour
         if (selected)
         {
             Vector2 sz = selectedStyle.CalcSize(content);
-            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 15, sz.x, sz.y), content, selectedStyle);
+            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 40, sz.x, sz.y), content, selectedStyle);
         }
         else
         {
             Vector2 sz = GUIStyle.none.CalcSize(content);
-            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 15, sz.x, sz.y), content, GUIStyle.none);
+            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 40, sz.x, sz.y), content, GUIStyle.none);
         }
     }
     
