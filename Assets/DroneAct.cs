@@ -9,6 +9,7 @@ public class DroneAct : MonoBehaviour
 {
     public int DroneID;
     public GameObject Propeller;
+    GUIStyle selectedStyle;
     //public GameWorld gameWorld;
     //public UnityEngine.UI.Text StatusText;
     Camera cam;
@@ -23,6 +24,7 @@ public class DroneAct : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        selectedStyle = new GUIStyle { normal = new GUIStyleState { background = MakeTex(Color.green) } };
         selected = false;
         cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         buf = new byte[1024];
@@ -34,6 +36,16 @@ public class DroneAct : MonoBehaviour
         sock.Bind(new IPEndPoint(IPAddress.Loopback, 17500 + DroneID));
         myproxy = new IPEndPoint(IPAddress.Loopback, 17500);
     }
+
+    Texture2D MakeTex(Color32 col)
+    {
+        Color32[] pix = { col, col, col, col };
+        Texture2D tex = new Texture2D(2, 2);
+        tex.SetPixels32(pix, 0);
+        tex.Apply();
+        return tex;
+    }
+
 
     // Update is called once per frame
     void Update()
@@ -64,7 +76,7 @@ public class DroneAct : MonoBehaviour
         }
         if (armed)
         {
-            Propeller.transform.Rotate(0, 3, 0, Space.Self);
+            Propeller.transform.Rotate(0, Time.deltaTime * 800, 0, Space.Self);
         }
     }
 
@@ -114,7 +126,17 @@ public class DroneAct : MonoBehaviour
     private void OnGUI()
     {
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
-        GUI.Label(new Rect(pos.x, Screen.height - pos.y + 10, 70, 50), "MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode);
+        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode);
+        if (selected)
+        {
+            Vector2 sz = selectedStyle.CalcSize(content);
+            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 15, sz.x, sz.y), content, selectedStyle);
+        }
+        else
+        {
+            Vector2 sz = GUIStyle.none.CalcSize(content);
+            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 15, sz.x, sz.y), content, GUIStyle.none);
+        }
     }
     
     static void CreateLineMaterial()
