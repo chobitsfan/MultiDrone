@@ -222,6 +222,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DroneID: 1
   Propeller: {fileID: 5962816434752422569}
+  Waypoint: {fileID: 5782257720504509584, guid: 1f6ed2531c181a94ba3a36fa566c62ab,
+    type: 3}
 --- !u!54 &1483838298991405575
 Rigidbody:
   m_ObjectHideFlags: 0
