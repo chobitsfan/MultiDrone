@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using System.Net;
 using System.Net.Sockets;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class DroneAct : MonoBehaviour, IPointerClickHandler
 {
@@ -24,6 +25,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     bool armed = false;
     static Material lineMaterial;
     GameObject wp = null;
+    float armedVibrationTs = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -73,13 +75,33 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 {
                     var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
                     apm_mode = heartbeat.custom_mode;
-                    if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0) armed = false; else armed = true;
+                    if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
+                    {
+                        armed = false;
+                    }
+                    else
+                    {
+                        if (!armed)
+                        {
+                            armedVibrationTs = 1;
+                            Gamepad.current.SetMotorSpeeds(0, 0.5f);
+                        }
+                        armed = true;
+                    }
                 }
             }
         }
         if (armed)
         {
             Propeller.transform.Rotate(0, Time.deltaTime * 800, 0, Space.Self);
+        }
+        if (armedVibrationTs > 0)
+        {
+            armedVibrationTs -= Time.deltaTime;
+            if (armedVibrationTs <= 0)
+            {
+                Gamepad.current.ResetHaptics();
+            }
         }
     }
 
