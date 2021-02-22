@@ -84,7 +84,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         if (!armed)
                         {
                             armedVibrationTs = 1;
-                            Gamepad.current.SetMotorSpeeds(0, 0.5f);
+                            Gamepad.current.SetMotorSpeeds(0, 0.8f);
                         }
                         armed = true;
                     }

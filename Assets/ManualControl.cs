@@ -7,7 +7,7 @@ public class ManualControl : MonoBehaviour
 {
     GameObject[] drones;
     short pitch, roll, throttle, yaw;
-    float controlTs = 0;
+    float controlCd = 0;
 
     private void Start()
     {
@@ -63,24 +63,16 @@ public class ManualControl : MonoBehaviour
         }
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
-        controlTs += Time.fixedDeltaTime;
-        if (controlTs > 0.05f)
+        controlCd -= Time.deltaTime;
+        if (controlCd <= 0)
         {
-            controlTs = 0;
+            controlCd = 0.1f;
             foreach (GameObject drone in drones)
             {
                 drone.GetComponent<DroneAct>().ManualControl(pitch, roll, throttle, yaw);
             }
-        }
-    }
-
-    void Control()
-    {
-        foreach (GameObject drone in drones)
-        {
-            drone.GetComponent<DroneAct>().ManualControl(pitch, roll, throttle, yaw);
         }
     }
 }
