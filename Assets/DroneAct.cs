@@ -26,6 +26,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     static Material lineMaterial;
     GameObject wp = null;
     float armedVibrationTs = 0;
+    Vector3 lastPos = Vector3.zero;
     // Start is called before the first frame update
     void Start()
     {
@@ -103,6 +104,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 Gamepad.current.ResetHaptics();
             }
         }
+        lastPos = transform.localPosition;
     }
 
     public void Arm()
@@ -294,7 +296,16 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     private void OnGUI()
     {
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
-        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode);
+        string posInfo;
+        if (transform.localPosition.Equals(lastPos))
+        {
+            posInfo = "no tracking";
+        }
+        else
+        {
+            posInfo = transform.localPosition.ToString("F2");
+        }
+        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + posInfo);
         if (selected)
         {
             Vector2 sz = selectedStyle.CalcSize(content);
