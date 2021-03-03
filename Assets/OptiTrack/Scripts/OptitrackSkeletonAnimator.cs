@@ -1,6 +1,18 @@
-﻿//======================================================================================================
-// Copyright 2016, NaturalPoint Inc.
-//======================================================================================================
+﻿/* 
+Copyright © 2016 NaturalPoint Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. 
+*/
 
 using System;
 using System.Collections.Generic;
@@ -26,7 +38,6 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
 
     /// <summary>The humanoid avatar for this GameObject's imported model.</summary>
     public Avatar DestinationAvatar;
-
 
     #region Private fields
     /// <summary>Used when retrieving and retargeting source pose. Cached and reused for efficiency.</summary>
@@ -57,7 +68,6 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
     private HumanPoseHandler m_destPoseHandler;
     #endregion Private fields
 
-
     void Start()
     {
         // If the user didn't explicitly associate a client, find a suitable default.
@@ -73,6 +83,8 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 return;
             }
         }
+
+        this.StreamingClient.RegisterSkeleton(this, this.SkeletonAssetName);
 
         // Create a lookup from Mecanim anatomy bone names to OptiTrack streaming bone names.
         CacheBoneNameMap( this.StreamingClient.BoneNamingConvention, this.SkeletonAssetName );
@@ -106,7 +118,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
         // Hook up retargeting between those GameObjects and the destination Avatar.
         MecanimSetup( rootObjectName );
 
-        // Can't reparent this until after Mecanim setup, or else Mecanim gets confused.
+        // Can't re-parent this until after Mecanim setup, or else Mecanim gets confused.
         m_rootObject.transform.parent = this.StreamingClient.transform;
         m_rootObject.transform.localPosition = Vector3.zero;
         m_rootObject.transform.localRotation = Quaternion.identity;
@@ -125,9 +137,9 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
 
                 OptitrackPose bonePose;
                 GameObject boneObject;
-                bool foundPose = skelState.BonePoses.TryGetValue( boneId, out bonePose );
+                bool foundPose = skelState.LocalBonePoses.TryGetValue( boneId, out bonePose );
                 bool foundObject = m_boneObjectMap.TryGetValue( boneId, out boneObject );
-                if ( foundPose && foundObject )
+                if (foundPose && foundObject)
                 {
                     boneObject.transform.localPosition = bonePose.Position;
                     boneObject.transform.localRotation = bonePose.Orientation;
@@ -140,7 +152,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 // Interpret the streamed pose into Mecanim muscle space representation.
                 m_srcPoseHandler.GetHumanPose( ref m_humanPose );
 
-                // Retarget that muscle space pose to the destination avatar.
+                // Re-target that muscle space pose to the destination avatar.
                 m_destPoseHandler.SetHumanPose( ref m_humanPose );
             }
         }
@@ -186,7 +198,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
             skeletonBones.Add( rootBone );
         }
 
-        // Create remaining retargeted bone definitions.
+        // Create remaining re-targeted bone definitions.
         for ( int boneDefIdx = 0; boneDefIdx < m_skeletonDef.Bones.Count; ++boneDefIdx )
         {
             OptitrackSkeletonDefinition.BoneDefinition boneDef = m_skeletonDef.Bones[boneDefIdx];
@@ -269,6 +281,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 m_cachedMecanimBoneNameMap.Add( "RightFoot",        assetName + "_RFoot" );
                 m_cachedMecanimBoneNameMap.Add( "RightToeBase",     assetName + "_RToe" );
 
+                /*
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Proximal",      assetName + "_LThumb1" );
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Intermediate",  assetName + "_LThumb2" );
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Distal",        assetName + "_LThumb3" );
@@ -303,6 +316,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 m_cachedMecanimBoneNameMap.Add( "Right Little Proximal",     assetName + "_RPinky1" );
                 m_cachedMecanimBoneNameMap.Add( "Right Little Intermediate", assetName + "_RPinky2" );
                 m_cachedMecanimBoneNameMap.Add( "Right Little Distal",       assetName + "_RPinky3" );
+                */
                 break;
             case OptitrackBoneNameConvention.FBX:
                 m_cachedMecanimBoneNameMap.Add( "Hips",             assetName + "_Hips" );
@@ -331,6 +345,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 m_cachedMecanimBoneNameMap.Add( "RightFoot",        assetName + "_RightFoot" );
                 m_cachedMecanimBoneNameMap.Add( "RightToeBase",     assetName + "_RightToeBase" );
 
+                /*
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Proximal",      assetName + "_LeftHandThumb1" );
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Intermediate",  assetName + "_LeftHandThumb2" );
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Distal",        assetName + "_LeftHandThumb3" );
@@ -365,6 +380,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 m_cachedMecanimBoneNameMap.Add( "Right Little Proximal",     assetName + "_RightHandPinky1" );
                 m_cachedMecanimBoneNameMap.Add( "Right Little Intermediate", assetName + "_RightHandPinky2" );
                 m_cachedMecanimBoneNameMap.Add( "Right Little Distal",       assetName + "_RightHandPinky3" );
+                */
                 break;
             case OptitrackBoneNameConvention.BVH:
                 m_cachedMecanimBoneNameMap.Add( "Hips",             assetName + "_Hips" );
@@ -393,6 +409,7 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 m_cachedMecanimBoneNameMap.Add( "RightFoot",        assetName + "_RightAnkle" );
                 m_cachedMecanimBoneNameMap.Add( "RightToeBase",     assetName + "_RightToe" );
 
+                /*
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Proximal",      assetName + "_LeftFinger0" );
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Intermediate",  assetName + "_LeftFinger01" );
                 m_cachedMecanimBoneNameMap.Add( "Left Thumb Distal",        assetName + "_LeftFinger02" );
@@ -427,8 +444,10 @@ public class OptitrackSkeletonAnimator : MonoBehaviour
                 m_cachedMecanimBoneNameMap.Add( "Right Little Proximal",     assetName + "_RightFinger4" );
                 m_cachedMecanimBoneNameMap.Add( "Right Little Intermediate", assetName + "_RightFinger41" );
                 m_cachedMecanimBoneNameMap.Add( "Right Little Distal",       assetName + "_RightFinger42" );
+                */
                 break;
         }
     }
     #endregion Private methods
+    
 }
