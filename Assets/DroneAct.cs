@@ -192,6 +192,21 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         }
     }
 
+    public void Land()
+    {
+        if (selected)
+        {
+            MAVLink.mavlink_set_mode_t cmd = new MAVLink.mavlink_set_mode_t
+            {
+                base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED,
+                target_system = 0,
+                custom_mode = (uint)MAVLink.COPTER_MODE.LAND
+            };
+            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.SET_MODE, cmd);
+            sock.SendTo(data, myproxy);
+        }
+    }
+
     public void ManualControl(short pitch, short roll, short throttle, short yaw)
     {
         if (selected)
@@ -283,12 +298,12 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         if (selected)
         {
             Vector2 sz = selectedStyle.CalcSize(content);
-            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 40, sz.x, sz.y), content, selectedStyle);
+            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 30, sz.x, sz.y), content, selectedStyle);
         }
         else
         {
             Vector2 sz = GUIStyle.none.CalcSize(content);
-            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 40, sz.x, sz.y), content, GUIStyle.none);
+            GUI.Label(new Rect(pos.x, Screen.height - pos.y + 30, sz.x, sz.y), content, GUIStyle.none);
         }
     }
     
@@ -329,10 +344,28 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         GL.Vertex3(pos.x, pos.y, 0);
         pos = Camera.main.WorldToScreenPoint(transform.position - transform.right * 0.5f);
         GL.Vertex3(pos.x, pos.y, 0);
-        //GL.Vertex3(0, 0, 0);
-        //GL.Vertex3(-0.5f, 0, 0);
-
         GL.End();
+
+        if (wp != null)
+        {
+            GL.Begin(GL.LINES);
+            GL.Color(Color.white);
+            pos = Camera.main.WorldToScreenPoint(transform.position);
+            GL.Vertex3(pos.x, pos.y, 0);
+            pos = Camera.main.WorldToScreenPoint(wp.transform.position);
+            GL.Vertex3(pos.x, pos.y, 0);
+            GL.End();
+        }
+
         GL.PopMatrix();
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject == wp)
+        {
+            Object.Destroy(wp);
+            wp = null;
+        }
     }
 }

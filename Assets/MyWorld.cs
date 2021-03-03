@@ -89,4 +89,12 @@ public class MyWorld : MonoBehaviour
             drone.GetComponent<DroneAct>().Goto(x, y, z);
         }
     }
+
+    public void Land()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Land();
+        }
+    }
 }
