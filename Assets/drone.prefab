@@ -208,6 +208,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   StreamingClient: {fileID: 0}
   RigidBodyId: 1
+  NetworkCompensation: 1
 --- !u!114 &9058673917746201955
 MonoBehaviour:
   m_ObjectHideFlags: 0

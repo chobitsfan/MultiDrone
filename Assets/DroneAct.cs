@@ -42,6 +42,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         };
         sock.Bind(new IPEndPoint(IPAddress.Loopback, 17500 + DroneID));
         myproxy = new IPEndPoint(IPAddress.Loopback, 17500);
+        wp = GameObject.Instantiate(Waypoint, Vector3.zero, Quaternion.identity);
+        wp.SetActive(false);
     }
 
     Texture2D MakeTex(Color32 col)
@@ -92,6 +94,31 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             }
                         }
                         armed = true;
+                    }
+                    if (!pos_tgt_local_rcved)
+                    {
+                        MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                        {
+                            command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                            param1 = (float)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED,
+                            param2 = 1000000
+                        };
+                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                        sock.SendTo(data, myproxy);
+                    }
+                }
+                else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
+                {
+                    pos_tgt_local_rcved = true;
+                    var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;                    
+                    if ((pos_tgt.type_mask & 0x1000) == 0x1000)
+                    {
+                        wp.SetActive(false);
+                    }
+                    else
+                    {
+                        wp.transform.position = new Vector3(-pos_tgt.x, -pos_tgt.z, pos_tgt.y);
+                        wp.SetActive(true);
                     }
                 }
             }
@@ -260,14 +287,14 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.SET_POSITION_TARGET_LOCAL_NED, cmd);
                 sock.SendTo(data, myproxy);
             }
-            if (wp == null)
+            /*if (wp == null)
             {
                 wp = GameObject.Instantiate(Waypoint, new Vector3(-x, -z, y), Quaternion.identity);
             }
             else
             {
                 wp.transform.position = new Vector3(-x, -z, y);
-            }
+            }*/
         }
     }
 
@@ -361,7 +388,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         GL.Vertex3(pos.x, pos.y, 0);
         GL.End();
 
-        if (wp != null)
+        if (wp.activeSelf)
         {
             GL.Begin(GL.LINES);
             GL.Color(Color.white);
@@ -375,12 +402,12 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         GL.PopMatrix();
     }
 
-    private void OnTriggerEnter(Collider other)
+    /*private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject == wp)
         {
             Object.Destroy(wp);
             wp = null;
         }
-    }
+    }*/
 }

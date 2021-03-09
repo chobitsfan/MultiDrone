@@ -14,7 +14,7 @@ public class MyWaypoint : MonoBehaviour
     private void OnGUI()
     {
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
-        GUIContent content = new GUIContent("Waypoint");
+        GUIContent content = new GUIContent("Waypoint\n" + transform.position.ToString("F2"));
         Vector2 sz = GUIStyle.none.CalcSize(content);
         GUI.Label(new Rect(pos.x, Screen.height - pos.y + 30, sz.x, sz.y), content, GUIStyle.none);
     }
