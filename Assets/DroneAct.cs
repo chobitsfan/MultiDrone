@@ -27,6 +27,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     GameObject wp = null;
     float armedVibrationTs = 0;
     Vector3 lastPos = Vector3.zero;
+    bool pos_tgt_local_rcved = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -84,8 +85,11 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     {
                         if (!armed)
                         {
-                            armedVibrationTs = 1;
-                            Gamepad.current.SetMotorSpeeds(0, 0.8f);
+                            if (Gamepad.current != null)
+                            {
+                                armedVibrationTs = 1;
+                                Gamepad.current.SetMotorSpeeds(0, 0.8f);
+                            }
                         }
                         armed = true;
                     }

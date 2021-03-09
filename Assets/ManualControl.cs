@@ -65,13 +65,16 @@ public class ManualControl : MonoBehaviour
 
     private void Update()
     {
-        controlCd -= Time.deltaTime;
-        if (controlCd <= 0)
+        if (Gamepad.current != null)
         {
-            controlCd = 0.1f;
-            foreach (GameObject drone in drones)
+            controlCd -= Time.deltaTime;
+            if (controlCd <= 0)
             {
-                drone.GetComponent<DroneAct>().ManualControl(pitch, roll, throttle, yaw);
+                controlCd = 0.1f;
+                foreach (GameObject drone in drones)
+                {
+                    drone.GetComponent<DroneAct>().ManualControl(pitch, roll, throttle, yaw);
+                }
             }
         }
     }
