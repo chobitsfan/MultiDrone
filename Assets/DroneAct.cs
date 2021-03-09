@@ -95,7 +95,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         }
                         armed = true;
                     }
-                    if (!pos_tgt_local_rcved)
+                    if (!pos_tgt_local_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED))
                     {
                         MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
                         {
@@ -172,11 +172,32 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         selected = false;
     }
 
+    public void TakeOff()
+    {
+        if (selected)
+        {
+            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+            {
+                command = (ushort)MAVLink.MAV_CMD.TAKEOFF,
+                param7 = 1
+            };
+            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+            sock.SendTo(data, myproxy);
+        }
+    }
+
     public void Guided()
     {
         if (selected)
         {
-            Debug.Log("guided " + DroneID);
+            MAVLink.mavlink_set_mode_t cmd = new MAVLink.mavlink_set_mode_t
+            {
+                base_mode = (byte)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED,
+                target_system = 0,
+                custom_mode = (uint)MAVLink.COPTER_MODE.GUIDED
+            };
+            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.SET_MODE, cmd);
+            sock.SendTo(data, myproxy);
         }
     }
 

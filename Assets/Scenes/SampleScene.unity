@@ -464,8 +464,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 1463773240}
   - {fileID: 587129588}
+  - {fileID: 1463773240}
   - {fileID: 1278567937}
   - {fileID: 1314904312}
   - {fileID: 1918738390}
@@ -588,16 +588,16 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: DisarmClick
-        m_Mode: 1
+      - m_Target: {fileID: 2030326971}
+        m_MethodName: Disarm
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 0
+          m_BoolArgument: 1
         m_CallState: 2
 --- !u!114 &506011307
 MonoBehaviour:
@@ -649,7 +649,7 @@ GameObject:
   - component: {fileID: 587129590}
   - component: {fileID: 587129589}
   m_Layer: 5
-  m_Name: Auto
+  m_Name: Guided
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -668,7 +668,7 @@ RectTransform:
   m_Children:
   - {fileID: 1237059616}
   m_Father: {fileID: 378198831}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -719,18 +719,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2030326971}
-        m_MethodName: Auto
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 1930021590}
-        m_MethodName: Auto
+        m_MethodName: Guided
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1618,7 +1607,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Auto
+  m_Text: Guided
 --- !u!222 &1237059618
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2057,8 +2046,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: TakeoffClick
+      - m_Target: {fileID: 2030326971}
+        m_MethodName: TakeOff
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2267,7 +2256,7 @@ RectTransform:
   m_Children:
   - {fileID: 206291498}
   m_Father: {fileID: 378198831}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -2317,8 +2306,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_MethodName: ArmClick
+      - m_Target: {fileID: 2030326971}
+        m_MethodName: Arm
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2964,18 +2953,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1918738389}
   m_CullTransparentMesh: 0
---- !u!114 &1930021590 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1210201577}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8168a8513fe3ebb4e9a65bb4719f2d19, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1936413421
 GameObject:
   m_ObjectHideFlags: 0
