@@ -28,6 +28,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     float armedVibrationTs = 0;
     Vector3 lastPos = Vector3.zero;
     bool pos_tgt_local_rcved = false;
+    byte system_status = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -85,16 +86,14 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     }
                     else
                     {
-                        if (!armed)
+                        if (!armed && (Gamepad.current != null))
                         {
-                            if (Gamepad.current != null)
-                            {
-                                armedVibrationTs = 1;
-                                Gamepad.current.SetMotorSpeeds(0, 0.8f);
-                            }
+                            armedVibrationTs = 1;
+                            Gamepad.current.SetMotorSpeeds(0, 0.8f);
                         }
                         armed = true;
                     }
+                    system_status = heartbeat.system_status;
                     if (!pos_tgt_local_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED))
                     {
                         MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
@@ -111,7 +110,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 {
                     pos_tgt_local_rcved = true;
                     var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;                    
-                    if ((pos_tgt.type_mask & 0x1000) == 0x1000)
+                    if (((pos_tgt.type_mask & 0x1000) == 0x1000) || system_status != (byte)MAVLink.MAV_STATE.ACTIVE)
                     {
                         wp.SetActive(false);
                     }
@@ -130,7 +129,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         if (armedVibrationTs > 0)
         {
             armedVibrationTs -= Time.deltaTime;
-            if (armedVibrationTs <= 0)
+            if ((armedVibrationTs <= 0) && (Gamepad.current != null))
             {
                 Gamepad.current.ResetHaptics();
             }
