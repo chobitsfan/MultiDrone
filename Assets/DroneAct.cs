@@ -12,6 +12,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     public int DroneID;
     public GameObject Propeller;
     public GameObject Waypoint;
+    public GameObject AlertMsg;
     GUIStyle selectedStyle;
     //public GameWorld gameWorld;
     //public UnityEngine.UI.Text StatusText;
@@ -29,6 +30,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     Vector3 lastPos = Vector3.zero;
     bool pos_tgt_local_rcved = false;
     byte system_status = 0;
+    float collision_alert_cd = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -109,7 +111,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
                 {
                     pos_tgt_local_rcved = true;
-                    var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;                    
+                    var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;
                     if (((pos_tgt.type_mask & 0x1000) == 0x1000) || system_status != (byte)MAVLink.MAV_STATE.ACTIVE)
                     {
                         wp.SetActive(false);
@@ -120,6 +122,19 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         wp.SetActive(true);
                     }
                 }
+                else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.COLLISION)
+                {
+                    collision_alert_cd = 1.2f;
+                    AlertMsg.SetActive(true);
+                }
+            }
+        }
+        if (collision_alert_cd > 0)
+        {
+            collision_alert_cd -= Time.deltaTime;
+            if (collision_alert_cd <= 0)
+            {
+                AlertMsg.SetActive(false);
             }
         }
         if (armed)
