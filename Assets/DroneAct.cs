@@ -62,70 +62,76 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     // Update is called once per frame
     void Update()
     {
-        int recvBytes = 0;
-        try
+        if (sock.Available > 0)
         {
-            recvBytes = sock.Receive(buf);
-        }
-        catch (SocketException) { }
-        if (recvBytes > 0)
-        {
-            MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(buf);
-            if (msg != null)
+            int recvBytes = 0;
+            try
             {
-                if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.STATUSTEXT)
+                recvBytes = sock.Receive(buf);
+            }
+            catch (SocketException e)
+            {
+                Debug.LogWarning("socket err " + e.ErrorCode);
+            }
+            if (recvBytes > 0)
+            {
+                MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(buf);
+                if (msg != null)
                 {
-                    var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
-                    Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
-                }
-                else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
-                {
-                    var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
-                    apm_mode = heartbeat.custom_mode;
-                    if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
+                    if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.STATUSTEXT)
                     {
-                        armed = false;
+                        var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
+                        Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
                     }
-                    else
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
                     {
-                        if (!armed && (Gamepad.current != null))
+                        var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
+                        apm_mode = heartbeat.custom_mode;
+                        if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
                         {
-                            armedVibrationTs = 1;
-                            Gamepad.current.SetMotorSpeeds(0, 0.8f);
+                            armed = false;
                         }
-                        armed = true;
-                    }
-                    system_status = heartbeat.system_status;
-                    if (!pos_tgt_local_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED))
-                    {
-                        MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                        else
                         {
-                            command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
-                            param1 = (float)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED,
-                            param2 = 1000000
-                        };
-                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
-                        sock.SendTo(data, myproxy);
+                            if (!armed && (Gamepad.current != null))
+                            {
+                                armedVibrationTs = 1;
+                                Gamepad.current.SetMotorSpeeds(0, 0.8f);
+                            }
+                            armed = true;
+                        }
+                        system_status = heartbeat.system_status;
+                        if (!pos_tgt_local_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED))
+                        {
+                            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                            {
+                                command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                param1 = (float)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED,
+                                param2 = 1000000
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                            sock.SendTo(data, myproxy);
+                        }
                     }
-                }
-                else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
-                {
-                    pos_tgt_local_rcved = true;
-                    var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;
-                    if (((pos_tgt.type_mask & 0x1000) == 0x1000) || system_status != (byte)MAVLink.MAV_STATE.ACTIVE)
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
                     {
-                        wp.SetActive(false);
+                        pos_tgt_local_rcved = true;
+                        var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;
+                        if (((pos_tgt.type_mask & 0x1000) == 0x1000) || system_status != (byte)MAVLink.MAV_STATE.ACTIVE)
+                        {
+                            wp.SetActive(false);
+                        }
+                        else
+                        {
+                            wp.transform.position = new Vector3(-pos_tgt.x, -pos_tgt.z, pos_tgt.y);
+                            wp.SetActive(true);
+                        }
                     }
-                    else
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.COLLISION)
                     {
-                        wp.transform.position = new Vector3(-pos_tgt.x, -pos_tgt.z, pos_tgt.y);
-                        wp.SetActive(true);
+                        collision_alert_cd = 1.2f;
+                        AlertMsg.SetActive(true);
                     }
-                }
-                else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.COLLISION)
-                {
-                    collision_alert_cd = 1.2f;
-                    AlertMsg.SetActive(true);
                 }
             }
         }
