@@ -187,7 +187,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    public void DeSelect()
+    public void DeSelected()
     {
         selected = false;
     }
@@ -345,7 +345,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         GameObject[] drones = GameObject.FindGameObjectsWithTag("Drones");
         foreach (GameObject drone in drones)
         {
-            drone.GetComponent<DroneAct>().DeSelect();
+            drone.GetComponent<DroneAct>().DeSelected();
         }
         selected = true;
     }
@@ -441,6 +441,11 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         }
 
         GL.PopMatrix();
+    }
+
+    public void Selected()
+    {
+        selected = true;
     }
 
     /*private void OnTriggerEnter(Collider other)
