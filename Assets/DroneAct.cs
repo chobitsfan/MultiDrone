@@ -172,7 +172,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    public void Disarm(bool forced)
+    public void Disarm(bool forced = true)
     {
         if (selected)
         {
