@@ -10,9 +10,9 @@ using UnityEngine.InputSystem;
 public class DroneAct : MonoBehaviour, IPointerClickHandler
 {
     public int DroneID;
+    public GameObject Body;
     public GameObject Propeller;
     public GameObject Waypoint;
-    public GameObject AlertMsg;
     GUIStyle selectedStyle;
     //public GameWorld gameWorld;
     //public UnityEngine.UI.Text StatusText;
@@ -30,7 +30,6 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     Vector3 lastPos = Vector3.zero;
     bool pos_tgt_local_rcved = false;
     byte system_status = 0;
-    float collision_alert_cd = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -127,20 +126,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             wp.SetActive(true);
                         }
                     }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.COLLISION)
-                    {
-                        collision_alert_cd = 1.2f;
-                        AlertMsg.SetActive(true);
-                    }
                 }
-            }
-        }
-        if (collision_alert_cd > 0)
-        {
-            collision_alert_cd -= Time.deltaTime;
-            if (collision_alert_cd <= 0)
-            {
-                AlertMsg.SetActive(false);
             }
         }
         if (armed)
@@ -156,6 +142,21 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             }
         }
         lastPos = transform.localPosition;
+        if (transform.localPosition.Equals(Vector3.zero))
+        {
+            if (Body.activeSelf)
+            {
+                Body.SetActive(false);
+                Propeller.SetActive(false);
+                GetComponent<BoxCollider>().enabled = false;
+            }
+        }
+        else if (!Body.activeSelf)
+        {
+            Body.SetActive(true);
+            Propeller.SetActive(true);
+            GetComponent<BoxCollider>().enabled = true;
+        }
     }
 
     public void Arm()
@@ -367,6 +368,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     private void OnGUI()
     {
+        if (transform.localPosition.Equals(Vector3.zero)) return;
+
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
         string posInfo;
         if (transform.localPosition.Equals(lastPos))
@@ -375,7 +378,9 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         }
         else
         {
-            posInfo = transform.localPosition.ToString("F2");
+            var unity_pos = transform.localPosition;
+            var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
+            posInfo = neu_pos.ToString("F2");
         }
         GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + posInfo);
         if (selected)
@@ -411,6 +416,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     private void OnRenderObject()
     {
+        if (transform.localPosition.Equals(Vector3.zero)) return;
+
         CreateLineMaterial();
         // Apply the line material
         lineMaterial.SetPass(0);
@@ -445,6 +452,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void Selected()
     {
+        if (transform.localPosition.Equals(Vector3.zero)) return;
+
         selected = true;
     }
 

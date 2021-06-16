@@ -86,7 +86,63 @@ public class MyWorld : MonoBehaviour
         }
         foreach (GameObject drone in drones)
         {
-            drone.GetComponent<DroneAct>().Goto(x, y, z);
+            drone.GetComponent<DroneAct>().Goto(x, y, -z);
+        }
+    }
+
+    public void Guided()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Guided();
+        }
+    }
+
+    public void Arm()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Arm();
+        }
+    }
+
+    public void TakeOff()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().TakeOff();
+        }
+    }
+
+    public void Land()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Land();
+        }
+    }
+
+    public void Disarm()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Disarm();
+        }
+    }
+
+    public void Auto()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Auto();
+        }
+    }
+
+    public void SelectAll()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().Selected();
         }
     }
 }
