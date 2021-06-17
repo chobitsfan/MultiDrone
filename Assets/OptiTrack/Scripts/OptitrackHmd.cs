@@ -197,7 +197,6 @@ public class OptitrackHmd : MonoBehaviour
 
 #if UNITY_2017_2_OR_NEWER
         string deviceFamily = UnityEngine.XR.XRSettings.loadedDeviceName;
-        string deviceModel = UnityEngine.XR.XRDevice.model;
 #else
         string deviceFamily = UnityEngine.VR.VRSettings.loadedDeviceName;
         string deviceModel = UnityEngine.VR.VRDevice.model;

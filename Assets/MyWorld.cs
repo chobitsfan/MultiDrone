@@ -145,4 +145,17 @@ public class MyWorld : MonoBehaviour
             drone.GetComponent<DroneAct>().Selected();
         }
     }
+
+    public void Exit()
+    {
+        Application.Quit();
+    }
+
+    public void NextWP()
+    {
+        foreach (GameObject drone in drones)
+        {
+            drone.GetComponent<DroneAct>().NextWP();
+        }
+    }
 }

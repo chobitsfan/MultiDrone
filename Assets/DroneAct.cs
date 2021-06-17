@@ -26,10 +26,11 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     bool armed = false;
     static Material lineMaterial;
     GameObject wp = null;
-    float armedVibrationTs = 0;
     Vector3 lastPos = Vector3.zero;
     bool pos_tgt_local_rcved = false;
+    bool mis_cur_rcved = false;
     byte system_status = 0;
+    int cur_mis_seq = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -92,11 +93,6 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         }
                         else
                         {
-                            if (!armed && (Gamepad.current != null))
-                            {
-                                armedVibrationTs = 1;
-                                Gamepad.current.SetMotorSpeeds(0, 0.8f);
-                            }
                             armed = true;
                         }
                         system_status = heartbeat.system_status;
@@ -106,6 +102,17 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             {
                                 command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
                                 param1 = (float)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED,
+                                param2 = 1000000
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                            sock.SendTo(data, myproxy);
+                        }
+                        if (!mis_cur_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.AUTO))
+                        {
+                            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                            {
+                                command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
                                 param2 = 1000000
                             };
                             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
@@ -126,20 +133,18 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             wp.SetActive(true);
                         }
                     }
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT)
+                    {
+                        mis_cur_rcved = true;
+                        cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
+                        //Debug.Log("recv cur mission " + cur_mis_seq);
+                    }
                 }
             }
         }
         if (armed)
         {
             Propeller.transform.Rotate(0, Time.deltaTime * 800, 0, Space.Self);
-        }
-        if (armedVibrationTs > 0)
-        {
-            armedVibrationTs -= Time.deltaTime;
-            if ((armedVibrationTs <= 0) && (Gamepad.current != null))
-            {
-                Gamepad.current.ResetHaptics();
-            }
         }
         lastPos = transform.localPosition;
         if (transform.localPosition.Equals(Vector3.zero))
@@ -156,6 +161,22 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             Body.SetActive(true);
             Propeller.SetActive(true);
             GetComponent<BoxCollider>().enabled = true;
+        }
+    }
+
+    public void NextWP()
+    {
+        //Debug.Log("cur mission:" + cur_mis_seq);
+        if (selected && (apm_mode == (uint)MAVLink.COPTER_MODE.AUTO))
+        {
+            MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
+            {
+                target_system = 0,
+                target_component = 0,
+                seq = (ushort)(cur_mis_seq + 1)
+            };
+            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
+            sock.SendTo(data, myproxy);
         }
     }
 
