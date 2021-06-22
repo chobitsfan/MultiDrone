@@ -29,8 +29,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     Vector3 lastPos = Vector3.zero;
     bool pos_tgt_local_rcved = false;
     bool mis_cur_rcved = false;
+    //bool mis_item_reached_rcved = false;
     byte system_status = 0;
     int cur_mis_seq = 0;
+    List<int> mis_chk_points = new List<int>() { 3, 5, 7 };
     // Start is called before the first frame update
     void Start()
     {
@@ -107,16 +109,30 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
                             sock.SendTo(data, myproxy);
                         }
-                        if (!mis_cur_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.AUTO))
+                        if (apm_mode == (uint)MAVLink.COPTER_MODE.AUTO)
                         {
-                            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                            if (!mis_cur_rcved)
                             {
-                                command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
-                                param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
-                                param2 = 1000000
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
-                            sock.SendTo(data, myproxy);
+                                MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                                {
+                                    command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                    param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
+                                    param2 = 1000000
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                                sock.SendTo(data, myproxy);
+                            }
+                            /*if (!mis_item_reached_rcved)
+                            {
+                                MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                                {
+                                    command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                    param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED,
+                                    param2 = 1000000
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                                sock.SendTo(data, myproxy);
+                            }*/
                         }
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
@@ -137,8 +153,35 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     {
                         mis_cur_rcved = true;
                         cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
-                        //Debug.Log("recv cur mission " + cur_mis_seq);
+                        //Debug.Log("rcv MISSION_CURRENT " + cur_mis_seq);
+                        if (mis_chk_points.Contains(cur_mis_seq))
+                        {
+                            MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
+                            {
+                                target_system = 0,
+                                target_component = 0,
+                                seq = (ushort)(cur_mis_seq + 1)
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
+                            sock.SendTo(data, myproxy);
+                        }
                     }
+                    /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED)
+                    {
+                        Debug.Log("rcv MISSION_ITEM_REACHED "+((MAVLink.mavlink_mission_item_reached_t)msg.data).seq);
+                        int seq = ((MAVLink.mavlink_mission_item_reached_t)msg.data).seq;
+                        if (mis_chk_points.Contains(seq))
+                        {
+                            MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
+                            {
+                                target_system = 0,
+                                target_component = 0,
+                                seq = (ushort)(seq + 2)
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
+                            sock.SendTo(data, myproxy);
+                        }
+                    }*/
                 }
             }
         }
@@ -182,7 +225,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void Arm()
     {
-        if (selected)
+        if (selected && ((apm_mode == (uint)MAVLink.COPTER_MODE.AUTO) || (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED)))
         {
             MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
             {
