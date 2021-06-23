@@ -27,12 +27,15 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     static Material lineMaterial;
     GameObject wp = null;
     Vector3 lastPos = Vector3.zero;
+    bool tracking = false;
     bool pos_tgt_local_rcved = false;
     bool mis_cur_rcved = false;
     //bool mis_item_reached_rcved = false;
     byte system_status = 0;
     int cur_mis_seq = 0;
-    List<int> mis_chk_points = new List<int>() { 3, 5, 7 };
+    List<int> mission_chk_points = new List<int>();
+    int mission_count = -1;
+    int wait_mission_seq = -1;
     // Start is called before the first frame update
     void Start()
     {
@@ -134,6 +137,31 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                                 sock.SendTo(data, myproxy);
                             }*/
                         }
+                        if (mission_count < 0)
+                        {
+                            MAVLink.mavlink_mission_request_list_t cmd = new MAVLink.mavlink_mission_request_list_t
+                            {
+                                target_system = 0,
+                                target_component = 0,
+                                mission_type = 0
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_LIST, cmd);
+                            sock.SendTo(data, myproxy);
+                            Debug.Log("send MISSION_REQUEST_LIST");
+                        }
+                        if ((wait_mission_seq >= 0) && (wait_mission_seq < mission_count))
+                        {
+                            MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
+                            {
+                                target_system = 0,
+                                target_component = 0,
+                                seq = (ushort)wait_mission_seq,
+                                mission_type = 0
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
+                            sock.SendTo(data, myproxy);
+                            Debug.Log("send MISSION_REQUEST_INT " + wait_mission_seq);
+                        }
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
                     {
@@ -154,7 +182,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         mis_cur_rcved = true;
                         cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
                         //Debug.Log("rcv MISSION_CURRENT " + cur_mis_seq);
-                        if (mis_chk_points.Contains(cur_mis_seq))
+                        if (mission_chk_points.Contains(cur_mis_seq))
                         {
                             MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
                             {
@@ -164,6 +192,62 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             };
                             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
                             sock.SendTo(data, myproxy);
+                        }
+                    }
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_COUNT)
+                    {
+                        mission_count = ((MAVLink.mavlink_mission_count_t)msg.data).count;
+                        if (mission_count > 0)
+                        {
+                            MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
+                            {
+                                target_system = 0,
+                                target_component = 0,
+                                seq = 0,
+                                mission_type = 0
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
+                            sock.SendTo(data, myproxy);
+                            wait_mission_seq = 0;
+                            Debug.Log("send MISSION_REQUEST_INT 0");
+                        }
+                    }
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT)
+                    {
+                        var item_int = (MAVLink.mavlink_mission_item_int_t)msg.data;
+                        if (item_int.seq == wait_mission_seq)
+                        {
+                            if (item_int.command == 93) //MAV_CMD_NAV_DELAY
+                            {
+                                mission_chk_points.Add(item_int.seq);
+                            }
+                            wait_mission_seq += 1;
+                            if (wait_mission_seq < mission_count)
+                            {
+                                MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
+                                {
+                                    target_system = 0,
+                                    target_component = 0,
+                                    seq = (ushort)wait_mission_seq,
+                                    mission_type = 0
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
+                                sock.SendTo(data, myproxy);
+                                Debug.Log("send MISSION_REQUEST_INT " + wait_mission_seq);
+                            }
+                            else
+                            {
+                                MAVLink.mavlink_mission_ack_t cmd = new MAVLink.mavlink_mission_ack_t
+                                {
+                                    target_system = 0,
+                                    target_component = 0,
+                                    type = 0,
+                                    mission_type = 0
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ACK, cmd);
+                                sock.SendTo(data, myproxy);
+                                Debug.Log("send MISSION_ACK");
+                            }
                         }
                     }
                     /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED)
@@ -189,8 +273,9 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         {
             Propeller.transform.Rotate(0, Time.deltaTime * 800, 0, Space.Self);
         }
+        if (lastPos.Equals(transform.localPosition)) tracking = false; else tracking = true;
         lastPos = transform.localPosition;
-        if (transform.localPosition.Equals(Vector3.zero))
+        if (!tracking)
         {
             if (Body.activeSelf)
             {
@@ -432,20 +517,15 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     private void OnGUI()
     {
-        if (transform.localPosition.Equals(Vector3.zero)) return;
+        if (!tracking) return;
 
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
         string posInfo;
-        if (transform.localPosition.Equals(lastPos))
-        {
-            posInfo = "no tracking";
-        }
-        else
-        {
-            var unity_pos = transform.localPosition;
-            var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
-            posInfo = neu_pos.ToString("F2");
-        }
+
+        var unity_pos = transform.localPosition;
+        var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
+        posInfo = neu_pos.ToString("F2");
+
         GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + posInfo);
         if (selected)
         {
@@ -480,7 +560,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     private void OnRenderObject()
     {
-        if (transform.localPosition.Equals(Vector3.zero)) return;
+        if (!tracking) return;
 
         CreateLineMaterial();
         // Apply the line material
@@ -516,7 +596,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void Selected()
     {
-        if (transform.localPosition.Equals(Vector3.zero)) return;
+        if (!tracking) return;
 
         selected = true;
     }
