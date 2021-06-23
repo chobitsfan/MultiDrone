@@ -27,6 +27,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     static Material lineMaterial;
     GameObject wp = null;
     Vector3 lastPos = Vector3.zero;
+    Vector3 vel = Vector3.zero;
     bool tracking = false;
     bool pos_tgt_local_rcved = false;
     bool mis_cur_rcved = false;
@@ -273,7 +274,15 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         {
             Propeller.transform.Rotate(0, Time.deltaTime * 800, 0, Space.Self);
         }
-        if (lastPos.Equals(transform.localPosition)) tracking = false; else tracking = true;
+        if (lastPos.Equals(transform.localPosition))
+        {
+            tracking = false;
+        }
+        else
+        {
+            tracking = true;
+            vel = (transform.localPosition - lastPos) / Time.deltaTime;
+        }
         lastPos = transform.localPosition;
         if (!tracking)
         {
@@ -520,13 +529,15 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         if (!tracking) return;
 
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
-        string posInfo;
 
         var unity_pos = transform.localPosition;
         var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
-        posInfo = neu_pos.ToString("F2");
+        var pos_info = neu_pos.ToString("F2");
 
-        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + posInfo);
+        var neu_vel = new Vector3(-vel.x, vel.z, vel.y);
+        var vel_info = neu_vel.ToString("F2");
+
+        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + pos_info + "\n" + vel_info);
         if (selected)
         {
             Vector2 sz = selectedStyle.CalcSize(content);
