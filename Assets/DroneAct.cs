@@ -13,6 +13,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     public GameObject Body;
     public GameObject Propeller;
     public GameObject Waypoint;
+    [System.NonSerialized]
+    public int apm_mode = -1;
+    [System.NonSerialized]
+    public bool waiting_in_chk_point = false;
     GUIStyle selectedStyle;
     //public GameWorld gameWorld;
     //public UnityEngine.UI.Text StatusText;
@@ -22,7 +26,6 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     Socket sock;
     bool selected = false;
     IPEndPoint myproxy;
-    uint apm_mode;
     bool armed = false;
     static Material lineMaterial;
     GameObject wp = null;
@@ -37,6 +40,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     List<int> mission_chk_points = new List<int>();
     int mission_count = -1;
     int wait_mission_seq = -1;
+    int nxt_wp_seq = -1;
     // Start is called before the first frame update
     void Start()
     {
@@ -92,7 +96,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
                     {
                         var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
-                        apm_mode = heartbeat.custom_mode;
+                        apm_mode = (int)heartbeat.custom_mode;
                         if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
                         {
                             armed = false;
@@ -102,7 +106,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             armed = true;
                         }
                         system_status = heartbeat.system_status;
-                        if (!pos_tgt_local_rcved && (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED))
+                        if (!pos_tgt_local_rcved && (apm_mode == (int)MAVLink.COPTER_MODE.GUIDED))
                         {
                             MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
                             {
@@ -113,7 +117,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
                             sock.SendTo(data, myproxy);
                         }
-                        if (apm_mode == (uint)MAVLink.COPTER_MODE.AUTO)
+                        if (apm_mode == (int)MAVLink.COPTER_MODE.AUTO)
                         {
                             if (!mis_cur_rcved)
                             {
@@ -183,16 +187,24 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         mis_cur_rcved = true;
                         cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
                         //Debug.Log("rcv MISSION_CURRENT " + cur_mis_seq);
-                        if (mission_chk_points.Contains(cur_mis_seq))
+                        if (cur_mis_seq < nxt_wp_seq)
                         {
                             MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
                             {
                                 target_system = 0,
                                 target_component = 0,
-                                seq = (ushort)(cur_mis_seq + 1)
+                                seq = (ushort)nxt_wp_seq
                             };
                             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
                             sock.SendTo(data, myproxy);
+                        }
+                        else if (mission_chk_points.Contains(cur_mis_seq))
+                        {
+                            waiting_in_chk_point = true;
+                        }
+                        else
+                        {
+                            waiting_in_chk_point = false;
                         }
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_COUNT)
@@ -303,8 +315,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void NextWP()
     {
-        //Debug.Log("cur mission:" + cur_mis_seq);
-        if (selected && (apm_mode == (uint)MAVLink.COPTER_MODE.AUTO))
+        if (selected && (apm_mode == (int)MAVLink.COPTER_MODE.AUTO))
         {
             MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
             {
@@ -314,12 +325,14 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             };
             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
             sock.SendTo(data, myproxy);
+            nxt_wp_seq = cur_mis_seq + 1;
+            Debug.Log("NextWP " + nxt_wp_seq);
         }
     }
 
     public void Arm()
     {
-        if (selected && ((apm_mode == (uint)MAVLink.COPTER_MODE.AUTO) || (apm_mode == (uint)MAVLink.COPTER_MODE.GUIDED)))
+        if (selected && ((apm_mode == (int)MAVLink.COPTER_MODE.AUTO) || (apm_mode == (int)MAVLink.COPTER_MODE.GUIDED)))
         {
             MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
             {
@@ -462,7 +475,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     {
         if (selected)
         {
-            if (apm_mode != (uint)MAVLink.COPTER_MODE.GUIDED)
+            if (apm_mode != (int)MAVLink.COPTER_MODE.GUIDED)
             {
                 MAVLink.mavlink_set_mode_t cmd = new MAVLink.mavlink_set_mode_t
                 {
@@ -583,6 +596,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         //GL.MultMatrix(transform.localToWorldMatrix);
         GL.LoadPixelMatrix();
 
+        //draw drone heading line
         GL.Begin(GL.LINES);
         GL.Color(Color.blue);
         Vector3 pos = Camera.main.WorldToScreenPoint(transform.position);

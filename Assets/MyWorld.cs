@@ -10,11 +10,35 @@ public class MyWorld : MonoBehaviour
     public InputField inputFieldY;
     public InputField inputFieldZ;
     static Material lineMaterial;
-    GameObject[] drones;
+    List<DroneAct> drones = new List<DroneAct>();
+    float chk_cd = 0.5f;
 
     private void Start()
     {
-        drones = GameObject.FindGameObjectsWithTag("Drones");
+        var droneGameObjects = GameObject.FindGameObjectsWithTag("Drones");
+        foreach (var droneGameObject in droneGameObjects)
+        {
+            drones.Add(droneGameObject.GetComponent<DroneAct>());
+        }
+    }
+
+    private void Update()
+    {
+        chk_cd -= Time.deltaTime;
+        if (chk_cd < 0)
+        {
+            chk_cd = 0.5f;
+            bool all_waiting = true;
+            foreach (var drone in drones)
+            {
+                if ((drone.apm_mode >= 0) && (!drone.waiting_in_chk_point))
+                {
+                    all_waiting = false;
+                    break;
+                }
+            }
+            if (all_waiting) NextWP();
+        }
     }
 
     static void CreateLineMaterial()
@@ -84,65 +108,65 @@ public class MyWorld : MonoBehaviour
             Debug.LogError(e);
             return;
         }
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Goto(x, y, -z);
+            drone.Goto(x, y, -z);
         }
     }
 
     public void Guided()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Guided();
+            drone.Guided();
         }
     }
 
     public void Arm()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Arm();
+            drone.Arm();
         }
     }
 
     public void TakeOff()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().TakeOff();
+            drone.TakeOff();
         }
     }
 
     public void Land()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Land();
+            drone.Land();
         }
     }
 
     public void Disarm()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Disarm();
+            drone.Disarm();
         }
     }
 
     public void Auto()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Auto();
+            drone.Auto();
         }
     }
 
     public void SelectAll()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().Selected();
+            drone.Selected();
         }
     }
 
@@ -153,9 +177,9 @@ public class MyWorld : MonoBehaviour
 
     public void NextWP()
     {
-        foreach (GameObject drone in drones)
+        foreach (var drone in drones)
         {
-            drone.GetComponent<DroneAct>().NextWP();
+            drone.NextWP();
         }
     }
 }
