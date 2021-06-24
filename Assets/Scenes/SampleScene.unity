@@ -629,7 +629,7 @@ RectTransform:
   m_Children:
   - {fileID: 56779081}
   m_Father: {fileID: 378198831}
-  m_RootOrder: 10
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -920,10 +920,10 @@ RectTransform:
   - {fileID: 1273685662}
   - {fileID: 1864475103}
   - {fileID: 1276595571}
-  - {fileID: 506011305}
   - {fileID: 307207689}
   - {fileID: 1915665995}
   - {fileID: 1830749297}
+  - {fileID: 506011305}
   m_Father: {fileID: 1936413425}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -970,7 +970,7 @@ GameObject:
   - component: {fileID: 506011307}
   - component: {fileID: 506011306}
   m_Layer: 5
-  m_Name: Disarm
+  m_Name: E Stop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -989,7 +989,7 @@ RectTransform:
   m_Children:
   - {fileID: 1718004577}
   m_Father: {fileID: 378198831}
-  m_RootOrder: 9
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -1016,10 +1016,10 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_NormalColor: {r: 1, g: 0.23511335, b: 0, a: 1}
+    m_HighlightedColor: {r: 1, g: 0.23529412, b: 0, a: 1}
+    m_PressedColor: {r: 0.6132076, g: 0, b: 0, a: 1}
+    m_SelectedColor: {r: 1, g: 0.23529412, b: 0, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
@@ -3287,7 +3287,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Disarm
+  m_Text: E Stop
 --- !u!222 &1718004579
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3406,7 +3406,7 @@ RectTransform:
   m_Children:
   - {fileID: 1270847999}
   m_Father: {fileID: 378198831}
-  m_RootOrder: 12
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -3839,7 +3839,7 @@ RectTransform:
   m_Children:
   - {fileID: 1230743160}
   m_Father: {fileID: 378198831}
-  m_RootOrder: 11
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
