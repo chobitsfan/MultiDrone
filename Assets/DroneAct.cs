@@ -97,6 +97,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     {
                         var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
                         apm_mode = (int)heartbeat.custom_mode;
+                        if (apm_mode != (int)MAVLink.COPTER_MODE.GUIDED)
+                        {
+                            wp.SetActive(false);
+                        }
                         if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
                         {
                             armed = false;
@@ -117,30 +121,16 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
                             sock.SendTo(data, myproxy);
                         }
-                        if (apm_mode == (int)MAVLink.COPTER_MODE.AUTO)
+                        if (!mis_cur_rcved && (apm_mode == (int)MAVLink.COPTER_MODE.AUTO))
                         {
-                            if (!mis_cur_rcved)
+                            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
                             {
-                                MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
-                                {
-                                    command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
-                                    param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
-                                    param2 = 1000000
-                                };
-                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
-                                sock.SendTo(data, myproxy);
-                            }
-                            /*if (!mis_item_reached_rcved)
-                            {
-                                MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
-                                {
-                                    command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
-                                    param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED,
-                                    param2 = 1000000
-                                };
-                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
-                                sock.SendTo(data, myproxy);
-                            }*/
+                                command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
+                                param2 = 1000000
+                            };
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                            sock.SendTo(data, myproxy);
                         }
                         if (mission_count < 0)
                         {
