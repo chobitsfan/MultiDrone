@@ -10,8 +10,7 @@ using UnityEngine.InputSystem;
 public class DroneAct : MonoBehaviour, IPointerClickHandler
 {
     public int DroneID;
-    public GameObject Body;
-    public GameObject Propeller;
+    public GameObject MyDroneModel;
     public GameObject Waypoint;
     [System.NonSerialized]
     public int apm_mode = -1;
@@ -41,6 +40,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     int mission_count = -1;
     int wait_mission_seq = -1;
     int nxt_wp_seq = -1;
+    float vel_update_cd = 0.5f;
     // Start is called before the first frame update
     void Start()
     {
@@ -103,10 +103,18 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         }
                         if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
                         {
+                            if (armed)
+                            {
+                                MyDroneModel.GetComponent<DroneAnime>().PropellerRun = false;
+                            }
                             armed = false;
                         }
                         else
                         {
+                            if (!armed)
+                            {
+                                MyDroneModel.GetComponent<DroneAnime>().PropellerRun = true;
+                            }
                             armed = true;
                         }
                         system_status = heartbeat.system_status;
@@ -272,10 +280,6 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 }
             }
         }
-        if (armed)
-        {
-            Propeller.transform.Rotate(0, Time.deltaTime * 800, 0, Space.Self);
-        }
         if (lastPos.Equals(transform.localPosition))
         {
             tracking = false;
@@ -283,22 +287,25 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         else
         {
             tracking = true;
-            vel = (transform.localPosition - lastPos) / Time.deltaTime;
+            vel_update_cd -= Time.deltaTime;
+            if (vel_update_cd < 0)
+            {
+                vel_update_cd = 0.5f;
+                vel = (transform.localPosition - lastPos) / Time.deltaTime;
+            }
         }
         lastPos = transform.localPosition;
         if (!tracking)
         {
-            if (Body.activeSelf)
+            if (MyDroneModel.activeSelf)
             {
-                Body.SetActive(false);
-                Propeller.SetActive(false);
+                MyDroneModel.SetActive(false);
                 GetComponent<BoxCollider>().enabled = false;
             }
         }
-        else if (!Body.activeSelf)
+        else if (!MyDroneModel.activeSelf)
         {
-            Body.SetActive(true);
-            Propeller.SetActive(true);
+            MyDroneModel.SetActive(true);
             GetComponent<BoxCollider>().enabled = true;
         }
     }

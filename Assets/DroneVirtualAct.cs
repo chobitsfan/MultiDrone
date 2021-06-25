@@ -17,7 +17,7 @@ public class DroneVirtualAct : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if ((transform.position - lastPos).sqrMagnitude > 0.04f)
+        if ((transform.position - lastPos).sqrMagnitude > 0.01f)
         {
             if (pastPath.Count >= MAX_POIONTS)
             {
