@@ -110,7 +110,7 @@ public class MyWorld : MonoBehaviour
         }
         foreach (var drone in drones)
         {
-            drone.Goto(x, y, -z);
+            if (drone.Goto(x, y, -z)) break;
         }
     }
 

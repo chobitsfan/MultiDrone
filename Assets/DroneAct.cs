@@ -468,7 +468,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         }
     }
 
-    public void Goto(float x, float y, float z)
+    public bool Goto(float x, float y, float z)
     {
         if (selected)
         {
@@ -497,15 +497,9 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.SET_POSITION_TARGET_LOCAL_NED, cmd);
                 sock.SendTo(data, myproxy);
             }
-            /*if (wp == null)
-            {
-                wp = GameObject.Instantiate(Waypoint, new Vector3(-x, -z, y), Quaternion.identity);
-            }
-            else
-            {
-                wp.transform.position = new Vector3(-x, -z, y);
-            }*/
+            return true;
         }
+        return false;
     }
 
     public void OnPointerClick(PointerEventData eventData)
