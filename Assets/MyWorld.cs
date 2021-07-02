@@ -197,4 +197,9 @@ public class MyWorld : MonoBehaviour
             }
         }
     }
+
+    public void StatusText(string text)
+    {
+        LogText.text = text;
+    }
 }
