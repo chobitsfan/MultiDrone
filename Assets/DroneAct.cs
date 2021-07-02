@@ -41,6 +41,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     int wait_mission_seq = -1;
     int nxt_wp_seq = -1;
     float vel_update_cd = 0.5f;
+    List<MAVLink.mavlink_mission_item_int_t> upload_mission = new List<MAVLink.mavlink_mission_item_int_t>();
+
     // Start is called before the first frame update
     void Start()
     {
@@ -261,6 +263,18 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             }
                         }
                     }
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST)
+                    {
+                        var seq = ((MAVLink.mavlink_mission_request_t)msg.data).seq;
+                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
+                        sock.SendTo(data, myproxy);
+                    }
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT)
+                    {
+                        var seq = ((MAVLink.mavlink_mission_request_int_t)msg.data).seq;
+                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
+                        sock.SendTo(data, myproxy);
+                    }
                     /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED)
                     {
                         Debug.Log("rcv MISSION_ITEM_REACHED "+((MAVLink.mavlink_mission_item_reached_t)msg.data).seq);
@@ -307,6 +321,22 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         {
             MyDroneModel.SetActive(true);
             GetComponent<BoxCollider>().enabled = true;
+        }
+    }
+
+    public void SendMissionCount(ushort count)
+    {
+        if (selected)
+        {
+            MAVLink.mavlink_mission_count_t cmd = new MAVLink.mavlink_mission_count_t
+            {
+                target_system = 0,
+                target_component = 0,
+                count = count,
+                mission_type = 0
+            };
+            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_COUNT, cmd);
+            sock.SendTo(data, myproxy);
         }
     }
 
@@ -617,12 +647,42 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         selected = true;
     }
 
-    /*private void OnTriggerEnter(Collider other)
+    public bool UploadMission(string[] csv_lines)
     {
-        if (other.gameObject == wp)
+        if (selected)
         {
-            Object.Destroy(wp);
-            wp = null;
+            upload_mission.Clear();
+            foreach (var csv_line in csv_lines)
+            {
+                var wp = csv_line.Split(',');
+                if (wp.Length == 12)
+                {
+                    try
+                    {
+                        MAVLink.mavlink_mission_item_int_t mission_item = new MAVLink.mavlink_mission_item_int_t
+                        {
+                            seq = (ushort)int.Parse(wp[0]),
+                            command = (ushort)int.Parse(wp[3]),
+                            param1 = float.Parse(wp[4]),
+                            param2 = float.Parse(wp[5]),
+                            param3 = float.Parse(wp[6]),
+                            param4 = float.Parse(wp[7]),
+                            x = int.Parse(wp[8]),
+                            y = int.Parse(wp[9]),
+                            z = int.Parse(wp[10]),
+                            autocontinue = byte.Parse(wp[11])
+                        };
+                        upload_mission.Add(mission_item);
+                    }
+                    catch (System.Exception)
+                    {
+                        break;
+                    }                   
+                }
+            }
+            if (upload_mission.Count > 0) SendMissionCount((ushort)upload_mission.Count);
+            return true;
         }
-    }*/
+        return false;
+    }
 }

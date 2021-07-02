@@ -9,6 +9,7 @@ public class MyWorld : MonoBehaviour
     public InputField inputFieldX;
     public InputField inputFieldY;
     public InputField inputFieldZ;
+    public Text LogText;
     static Material lineMaterial;
     List<DroneAct> drones = new List<DroneAct>();
     float chk_cd = 0.5f;
@@ -180,6 +181,20 @@ public class MyWorld : MonoBehaviour
         foreach (var drone in drones)
         {
             drone.NextWP();
+        }
+    }
+
+    public void OpenMissionFile()
+    {
+        var open_result =  SFB.StandaloneFileBrowser.OpenFilePanel("Open File", "", "", false);
+        if (open_result.Length > 0)
+        {
+            var log_filename = open_result[0];
+            var csv_lines = System.IO.File.ReadAllLines(log_filename);
+            foreach (var drone in drones)
+            {
+                if (drone.UploadMission(csv_lines)) break;
+            }
         }
     }
 }
