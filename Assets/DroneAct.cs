@@ -95,7 +95,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     {
                         var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
                         //Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
-                        myWorld.StatusText(System.Text.Encoding.ASCII.GetString(status_txt.text));
+                        myWorld.StatusText("[" + msg.sysid + "] " + System.Text.Encoding.ASCII.GetString(status_txt.text));
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
                     {
