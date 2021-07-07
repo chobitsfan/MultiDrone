@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +9,7 @@ public class MyWorld : MonoBehaviour
     public InputField inputFieldY;
     public InputField inputFieldZ;
     public Text LogText;
+    public GameObject FloorQuad;
     static Material lineMaterial;
     List<DroneAct> drones = new List<DroneAct>();
     float chk_cd = 0.5f;
@@ -20,6 +20,34 @@ public class MyWorld : MonoBehaviour
         foreach (var droneGameObject in droneGameObjects)
         {
             drones.Add(droneGameObject.GetComponent<DroneAct>());
+        }
+    }
+
+    public void FloorXChanged(string text)
+    {
+        try
+        {
+            Vector3 scale = FloorQuad.transform.localScale;
+            scale.x = int.Parse(text);
+            FloorQuad.transform.localScale = scale; 
+        }
+        catch (Exception)
+        {
+
+        }
+    }
+
+    public void FloorYChanged(string text)
+    {
+        try
+        {
+            Vector3 scale = FloorQuad.transform.localScale;
+            scale.y = int.Parse(text);
+            FloorQuad.transform.localScale = scale;
+        }
+        catch (Exception)
+        {
+
         }
     }
 
@@ -40,6 +68,17 @@ public class MyWorld : MonoBehaviour
             }
             if (all_waiting) NextWP();
         }
+        
+        /*if (Mouse.current.leftButton.isPressed)
+        {
+            float distance;
+            var mouse_pos = Mouse.current.position.ReadValue();
+            Ray ray = Camera.main.ScreenPointToRay(new Vector3(mouse_pos.x, mouse_pos.y));
+            if (gnd_plane.Raycast(ray, out distance))
+            {
+                Debug.Log(ray.GetPoint(distance));
+            }
+        }*/
     }
 
     static void CreateLineMaterial()

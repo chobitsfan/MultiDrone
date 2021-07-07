@@ -1,11 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using System.Net;
 using System.Net.Sockets;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 public class DroneAct : MonoBehaviour, IPointerClickHandler
 {
@@ -92,7 +89,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 while (true)
                 {
                     MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(buf, offset);
-                    if (msg == null || offset >= buf.Length)
+                    if ((msg == null) || (offset >= buf.Length))
                     {
                         break;
                     } 
