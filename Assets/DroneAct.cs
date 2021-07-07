@@ -88,156 +88,83 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             }
             if (recvBytes > 0)
             {
-                MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(buf);
-                if (msg != null)
+                int offset = 0;
+                while (true)
                 {
-                    if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.STATUSTEXT)
+                    MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(buf, offset);
+                    if (msg == null || offset >= buf.Length)
                     {
-                        var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
-                        //Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
-                        myWorld.StatusText("[" + msg.sysid + "] " + System.Text.Encoding.ASCII.GetString(status_txt.text));
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
+                        break;
+                    } 
+                    else
                     {
-                        var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
-                        apm_mode = (int)heartbeat.custom_mode;
-                        if (apm_mode != (int)MAVLink.COPTER_MODE.GUIDED)
+                        offset += msg.Length;
+                        if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.STATUSTEXT)
                         {
-                            wp.SetActive(false);
+                            var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
+                            //Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
+                            myWorld.StatusText("[" + msg.sysid + "] " + System.Text.Encoding.ASCII.GetString(status_txt.text));
                         }
-                        if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
                         {
-                            if (armed)
+                            var heartbeat = (MAVLink.mavlink_heartbeat_t)msg.data;
+                            apm_mode = (int)heartbeat.custom_mode;
+                            if (apm_mode != (int)MAVLink.COPTER_MODE.GUIDED)
                             {
-                                MyDroneModel.GetComponent<DroneAnime>().PropellerRun = false;
+                                wp.SetActive(false);
                             }
-                            armed = false;
-                        }
-                        else
-                        {
-                            if (!armed)
+                            if ((heartbeat.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) == 0)
                             {
-                                MyDroneModel.GetComponent<DroneAnime>().PropellerRun = true;
+                                if (armed)
+                                {
+                                    MyDroneModel.GetComponent<DroneAnime>().PropellerRun = false;
+                                }
+                                armed = false;
                             }
-                            armed = true;
-                        }
-                        system_status = heartbeat.system_status;
-                        if (!pos_tgt_local_rcved && (apm_mode == (int)MAVLink.COPTER_MODE.GUIDED))
-                        {
-                            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                            else
                             {
-                                command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
-                                param1 = (float)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED,
-                                param2 = 1000000
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
-                            sock.SendTo(data, myproxy);
-                        }
-                        if (!mis_cur_rcved && (apm_mode == (int)MAVLink.COPTER_MODE.AUTO))
-                        {
-                            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
-                            {
-                                command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
-                                param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
-                                param2 = 1000000
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
-                            sock.SendTo(data, myproxy);
-                        }
-                        if (mission_count < 0)
-                        {
-                            MAVLink.mavlink_mission_request_list_t cmd = new MAVLink.mavlink_mission_request_list_t
-                            {
-                                target_system = 0,
-                                target_component = 0,
-                                mission_type = 0
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_LIST, cmd);
-                            sock.SendTo(data, myproxy);
-                            //Debug.Log("send MISSION_REQUEST_LIST");
-                        }
-                        if ((wait_mission_seq >= 0) && (wait_mission_seq < mission_count))
-                        {
-                            MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
-                            {
-                                target_system = 0,
-                                target_component = 0,
-                                seq = (ushort)wait_mission_seq,
-                                mission_type = 0
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
-                            sock.SendTo(data, myproxy);
-                            //Debug.Log("send MISSION_REQUEST_INT " + wait_mission_seq);
-                        }
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
-                    {
-                        pos_tgt_local_rcved = true;
-                        var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;
-                        if (((pos_tgt.type_mask & 0x1000) == 0x1000) || system_status != (byte)MAVLink.MAV_STATE.ACTIVE)
-                        {
-                            wp.SetActive(false);
-                        }
-                        else
-                        {
-                            wp.transform.position = new Vector3(-pos_tgt.x, -pos_tgt.z, pos_tgt.y);
-                            wp.SetActive(true);
-                        }
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT)
-                    {
-                        mis_cur_rcved = true;
-                        cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
-                        //Debug.Log("rcv MISSION_CURRENT " + cur_mis_seq);
-                        if (cur_mis_seq < nxt_wp_seq)
-                        {
-                            MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
-                            {
-                                target_system = 0,
-                                target_component = 0,
-                                seq = (ushort)nxt_wp_seq
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
-                            sock.SendTo(data, myproxy);
-                        }
-                        else if (mission_chk_points.Contains(cur_mis_seq))
-                        {
-                            waiting_in_chk_point = true;
-                        }
-                        else
-                        {
-                            waiting_in_chk_point = false;
-                        }
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_COUNT)
-                    {
-                        mission_count = ((MAVLink.mavlink_mission_count_t)msg.data).count;
-                        if (mission_count > 0)
-                        {
-                            MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
-                            {
-                                target_system = 0,
-                                target_component = 0,
-                                seq = 0,
-                                mission_type = 0
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
-                            sock.SendTo(data, myproxy);
-                            wait_mission_seq = 0;
-                            //Debug.Log("send MISSION_REQUEST_INT 0");
-                        }
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT)
-                    {
-                        var item_int = (MAVLink.mavlink_mission_item_int_t)msg.data;
-                        if (item_int.seq == wait_mission_seq)
-                        {
-                            if (item_int.command == 93) //MAV_CMD_NAV_DELAY
-                            {
-                                mission_chk_points.Add(item_int.seq);
+                                if (!armed)
+                                {
+                                    MyDroneModel.GetComponent<DroneAnime>().PropellerRun = true;
+                                }
+                                armed = true;
                             }
-                            wait_mission_seq += 1;
-                            if (wait_mission_seq < mission_count)
+                            system_status = heartbeat.system_status;
+                            if (!pos_tgt_local_rcved && (apm_mode == (int)MAVLink.COPTER_MODE.GUIDED))
+                            {
+                                MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                                {
+                                    command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                    param1 = (float)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED,
+                                    param2 = 1000000
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                                sock.SendTo(data, myproxy);
+                            }
+                            if (!mis_cur_rcved && (apm_mode == (int)MAVLink.COPTER_MODE.AUTO))
+                            {
+                                MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+                                {
+                                    command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                                    param1 = (float)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT,
+                                    param2 = 1000000
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+                                sock.SendTo(data, myproxy);
+                            }
+                            if (mission_count < 0)
+                            {
+                                MAVLink.mavlink_mission_request_list_t cmd = new MAVLink.mavlink_mission_request_list_t
+                                {
+                                    target_system = 0,
+                                    target_component = 0,
+                                    mission_type = 0
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_LIST, cmd);
+                                sock.SendTo(data, myproxy);
+                                //Debug.Log("send MISSION_REQUEST_LIST");
+                            }
+                            if ((wait_mission_seq >= 0) && (wait_mission_seq < mission_count))
                             {
                                 MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
                                 {
@@ -250,53 +177,135 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                                 sock.SendTo(data, myproxy);
                                 //Debug.Log("send MISSION_REQUEST_INT " + wait_mission_seq);
                             }
+                        }
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.POSITION_TARGET_LOCAL_NED)
+                        {
+                            pos_tgt_local_rcved = true;
+                            var pos_tgt = (MAVLink.mavlink_position_target_local_ned_t)msg.data;
+                            if (((pos_tgt.type_mask & 0x1000) == 0x1000) || system_status != (byte)MAVLink.MAV_STATE.ACTIVE)
+                            {
+                                wp.SetActive(false);
+                            }
                             else
                             {
-                                MAVLink.mavlink_mission_ack_t cmd = new MAVLink.mavlink_mission_ack_t
+                                wp.transform.position = new Vector3(-pos_tgt.x, -pos_tgt.z, pos_tgt.y);
+                                wp.SetActive(true);
+                            }
+                        }
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT)
+                        {
+                            mis_cur_rcved = true;
+                            cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
+                            //Debug.Log("rcv MISSION_CURRENT " + cur_mis_seq);
+                            if (cur_mis_seq < nxt_wp_seq)
+                            {
+                                MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
                                 {
                                     target_system = 0,
                                     target_component = 0,
-                                    type = 0,
-                                    mission_type = 0
+                                    seq = (ushort)nxt_wp_seq
                                 };
-                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ACK, cmd);
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
                                 sock.SendTo(data, myproxy);
-                                //Debug.Log("send MISSION_ACK");
+                            }
+                            else if (mission_chk_points.Contains(cur_mis_seq))
+                            {
+                                waiting_in_chk_point = true;
+                            }
+                            else
+                            {
+                                waiting_in_chk_point = false;
                             }
                         }
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST)
-                    {
-                        var seq = ((MAVLink.mavlink_mission_request_t)msg.data).seq;
-                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
-                        sock.SendTo(data, myproxy);
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT)
-                    {
-                        var seq = ((MAVLink.mavlink_mission_request_int_t)msg.data).seq;
-                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
-                        sock.SendTo(data, myproxy);
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ACK)
-                    {
-                        myWorld.StatusText("mission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type);
-                    }
-                    /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED)
-                    {
-                        Debug.Log("rcv MISSION_ITEM_REACHED "+((MAVLink.mavlink_mission_item_reached_t)msg.data).seq);
-                        int seq = ((MAVLink.mavlink_mission_item_reached_t)msg.data).seq;
-                        if (mis_chk_points.Contains(seq))
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_COUNT)
                         {
-                            MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
+                            mission_count = ((MAVLink.mavlink_mission_count_t)msg.data).count;
+                            if (mission_count > 0)
                             {
-                                target_system = 0,
-                                target_component = 0,
-                                seq = (ushort)(seq + 2)
-                            };
-                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
+                                MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
+                                {
+                                    target_system = 0,
+                                    target_component = 0,
+                                    seq = 0,
+                                    mission_type = 0
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
+                                sock.SendTo(data, myproxy);
+                                wait_mission_seq = 0;
+                                //Debug.Log("send MISSION_REQUEST_INT 0");
+                            }
+                        }
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT)
+                        {
+                            var item_int = (MAVLink.mavlink_mission_item_int_t)msg.data;
+                            if (item_int.seq == wait_mission_seq)
+                            {
+                                if (item_int.command == 93) //MAV_CMD_NAV_DELAY
+                                {
+                                    mission_chk_points.Add(item_int.seq);
+                                }
+                                wait_mission_seq += 1;
+                                if (wait_mission_seq < mission_count)
+                                {
+                                    MAVLink.mavlink_mission_request_int_t cmd = new MAVLink.mavlink_mission_request_int_t
+                                    {
+                                        target_system = 0,
+                                        target_component = 0,
+                                        seq = (ushort)wait_mission_seq,
+                                        mission_type = 0
+                                    };
+                                    byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT, cmd);
+                                    sock.SendTo(data, myproxy);
+                                    //Debug.Log("send MISSION_REQUEST_INT " + wait_mission_seq);
+                                }
+                                else
+                                {
+                                    MAVLink.mavlink_mission_ack_t cmd = new MAVLink.mavlink_mission_ack_t
+                                    {
+                                        target_system = 0,
+                                        target_component = 0,
+                                        type = 0,
+                                        mission_type = 0
+                                    };
+                                    byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ACK, cmd);
+                                    sock.SendTo(data, myproxy);
+                                    //Debug.Log("send MISSION_ACK");
+                                }
+                            }
+                        }
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST)
+                        {
+                            var seq = ((MAVLink.mavlink_mission_request_t)msg.data).seq;
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
                             sock.SendTo(data, myproxy);
                         }
-                    }*/
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT)
+                        {
+                            var seq = ((MAVLink.mavlink_mission_request_int_t)msg.data).seq;
+                            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
+                            sock.SendTo(data, myproxy);
+                        }
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ACK)
+                        {
+                            myWorld.StatusText("mission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type);
+                        }
+                        /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED)
+                        {
+                            Debug.Log("rcv MISSION_ITEM_REACHED "+((MAVLink.mavlink_mission_item_reached_t)msg.data).seq);
+                            int seq = ((MAVLink.mavlink_mission_item_reached_t)msg.data).seq;
+                            if (mis_chk_points.Contains(seq))
+                            {
+                                MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
+                                {
+                                    target_system = 0,
+                                    target_component = 0,
+                                    seq = (ushort)(seq + 2)
+                                };
+                                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
+                                sock.SendTo(data, myproxy);
+                            }
+                        }*/
+                    }
                 }
             }
         }

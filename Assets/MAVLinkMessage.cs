@@ -149,8 +149,6 @@ public partial class MAVLink
         {
             this.buffer = buffer;
             this.rxtime = rxTime;
-
-            processBuffer(buffer);
         }
 
         internal void processBuffer(byte[] buffer)
