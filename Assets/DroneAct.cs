@@ -36,9 +36,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     int mission_count = -1;
     int wait_mission_seq = -1;
     int nxt_wp_seq = -1;
-    float vel_update_cd = 0.5f;
+    float vel_update_int = 0f;
     List<MAVLink.mavlink_mission_item_int_t> upload_mission = new List<MAVLink.mavlink_mission_item_int_t>();
     MyWorld myWorld;
+    float att_pos_update_int = 10f;
 
     // Start is called before the first frame update
     void Start()
@@ -72,6 +73,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     // Update is called once per frame
     void Update()
     {
+        att_pos_update_int += Time.deltaTime;
         if (sock.Available > 0)
         {
             int recvBytes = 0;
@@ -286,6 +288,13 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         {
                             myWorld.StatusText("mission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type);
                         }
+                        else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.ATT_POS_MOCAP)
+                        {
+                            att_pos_update_int = 0f;
+                            var att_pos = (MAVLink.mavlink_att_pos_mocap_t)msg.data;
+                            gameObject.transform.localPosition = new Vector3(-att_pos.x, att_pos.y, att_pos.z);
+                            gameObject.transform.localRotation = new Quaternion(-att_pos.q[1], att_pos.q[2], att_pos.q[3], -att_pos.q[0]);
+                        }
                         /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_REACHED)
                         {
                             Debug.Log("rcv MISSION_ITEM_REACHED "+((MAVLink.mavlink_mission_item_reached_t)msg.data).seq);
@@ -306,21 +315,25 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 }
             }
         }
-        if (lastPos.Equals(transform.localPosition))
+        if (att_pos_update_int > 5f)
         {
             tracking = false;
+            att_pos_update_int = 5f;
         }
         else
         {
             tracking = true;
-            vel_update_cd -= Time.deltaTime;
-            if (vel_update_cd < 0)
+        }
+        if (tracking)
+        {
+            vel_update_int += Time.deltaTime;
+            if (vel_update_int > 0.5f)
             {
-                vel_update_cd = 0.5f;
-                vel = (transform.localPosition - lastPos) / Time.deltaTime;
+                vel = (transform.localPosition - lastPos) / vel_update_int;
+                lastPos = transform.localPosition;
+                vel_update_int = 0f;
             }
         }
-        lastPos = transform.localPosition;
         if (!tracking)
         {
             if (MyDroneModel.activeSelf)
@@ -354,7 +367,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void NextWP()
     {
-        if (selected && (apm_mode == (int)MAVLink.COPTER_MODE.AUTO))
+        if (selected)
         {
             MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
             {
@@ -371,7 +384,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void Arm()
     {
-        if (selected && ((apm_mode == (int)MAVLink.COPTER_MODE.AUTO) || (apm_mode == (int)MAVLink.COPTER_MODE.GUIDED)))
+        if (selected)
         {
             MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
             {
