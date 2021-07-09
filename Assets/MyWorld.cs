@@ -57,13 +57,29 @@ public class MyWorld : MonoBehaviour
         if (chk_cd < 0)
         {
             chk_cd = 0.5f;
-            bool all_waiting = true;
+            /*bool all_waiting = true;
             foreach (var drone in drones)
             {
                 if ((drone.apm_mode >= 0) && (!drone.waiting_in_chk_point))
                 {
                     all_waiting = false;
                     break;
+                }
+            }*/
+            bool all_waiting = false;
+            foreach (var drone in drones)
+            {
+                if (drone.apm_mode >= 0)
+                {
+                    if (drone.waiting_in_chk_point)
+                    {
+                        all_waiting = true;
+                    }
+                    else
+                    {
+                        all_waiting = false;
+                        break;
+                    }
                 }
             }
             if (all_waiting) NextWP();
