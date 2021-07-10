@@ -47,7 +47,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         selectedStyle = new GUIStyle { normal = new GUIStyleState { background = MakeTex(Color.green) } };
         selected = false;
         cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
-        buf = new byte[1024];
+        buf = new byte[512];
         mavlinkParse = new MAVLink.MavlinkParse();
         sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)
         {
@@ -74,12 +74,12 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     void Update()
     {
         att_pos_update_int += Time.deltaTime;
-        if (sock.Available > 0)
+        while (sock.Available > 0)
         {
             int recvBytes = 0;
             try
             {
-                recvBytes = sock.Receive(buf);
+                recvBytes = sock.Receive(buf); //Receive will read the FIRST queued datagram
             }
             catch (SocketException e)
             {
@@ -87,17 +87,11 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             }
             if (recvBytes > 0)
             {
-                int offset = 0;
-                while (true)
-                {
-                    MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(buf, offset);
-                    if ((msg == null) || (offset >= buf.Length))
+                    byte[] msg_buf = new byte[recvBytes];
+                    System.Array.Copy(buf, msg_buf, recvBytes);
+                    MAVLink.MAVLinkMessage msg = mavlinkParse.ReadPacket(msg_buf);
+                    if (msg != null)
                     {
-                        break;
-                    } 
-                    else
-                    {
-                        offset += msg.Length;
                         if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.STATUSTEXT)
                         {
                             var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
@@ -312,7 +306,6 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             }
                         }*/
                     }
-                }
             }
         }
         if (att_pos_update_int > 5f)

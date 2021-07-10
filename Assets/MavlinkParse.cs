@@ -118,37 +118,14 @@ public partial class MAVLink
             }
         }
 
-        public MAVLinkMessage ReadPacket(byte[] buffer, int offset = 0)
+        public MAVLinkMessage ReadPacket(byte[] buffer)
         {
-            if (buffer[offset] != MAVLink.MAVLINK_STX && buffer[offset] != MAVLINK_STX_MAVLINK1) return null;
+            if (buffer[0] != MAVLink.MAVLINK_STX && buffer[0] != MAVLINK_STX_MAVLINK1) return null;
 
-            var headerlength = buffer[offset] == MAVLINK_STX ? MAVLINK_CORE_HEADER_LEN : MAVLINK_CORE_HEADER_MAVLINK1_LEN;
-            var headerlengthstx = headerlength + 1;
-
-            // packet length
-            int lengthtoread = 0;
-            if (buffer[offset] == MAVLINK_STX)
-            {
-                lengthtoread = buffer[offset + 1] + headerlengthstx + 2 - 2; // data + header + checksum - magic - length
-                if ((buffer[offset +2] & MAVLINK_IFLAG_SIGNED) > 0)
-                {
-                    lengthtoread += MAVLINK_SIGNATURE_BLOCK_LEN;
-                }
-            }
-            else
-            {
-                lengthtoread = buffer[offset +1] + headerlengthstx + 2 - 2; // data + header + checksum - U - length    
-            }
-
-            // resize the packet to the correct length
-            // Array.Resize<byte>(ref buffer, lengthtoread + 2);
-            byte[] msg_buf = new byte[lengthtoread + 2];
-            Array.Copy(buffer, offset, msg_buf, 0, lengthtoread + 2);
-
-            MAVLinkMessage message = new MAVLinkMessage(msg_buf);
+            MAVLinkMessage message = new MAVLinkMessage(buffer);
 
             // calc crc
-            ushort crc = MavlinkCRC.crc_calculate(msg_buf, msg_buf.Length - 2);
+            ushort crc = MavlinkCRC.crc_calculate(buffer, buffer.Length - 2);
 
             // calc extra bit of crc for mavlink 1.0+
             if (message.header == MAVLINK_STX || message.header == MAVLINK_STX_MAVLINK1)
