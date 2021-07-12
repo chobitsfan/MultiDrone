@@ -38,8 +38,9 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     int nxt_wp_seq = -1;
     float vel_update_int = 0f;
     List<MAVLink.mavlink_mission_item_int_t> upload_mission = new List<MAVLink.mavlink_mission_item_int_t>();
-    MyWorld myWorld;
     float att_pos_update_int = 10f;
+    string status_text = "";
+    float status_text_timeout = 0f;
 
     // Start is called before the first frame update
     void Start()
@@ -57,7 +58,6 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         myproxy = new IPEndPoint(IPAddress.Loopback, 17500);
         wp = GameObject.Instantiate(Waypoint, Vector3.zero, Quaternion.identity);
         wp.SetActive(false);
-        myWorld = GameObject.Find("MyWorld").GetComponent<MyWorld>();
     }
 
     Texture2D MakeTex(Color32 col)
@@ -74,6 +74,14 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     void Update()
     {
         att_pos_update_int += Time.deltaTime;
+        if (status_text_timeout > 0f)
+        {
+            status_text_timeout -= Time.deltaTime;
+            if (status_text_timeout <= 0f)
+            {
+                status_text = "";
+            }
+        }
         while (sock.Available > 0)
         {
             int recvBytes = 0;
@@ -96,7 +104,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     {
                         var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
                         //Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
-                        myWorld.StatusText("[" + msg.sysid + "] " + System.Text.Encoding.ASCII.GetString(status_txt.text));
+                        status_text = "\n" + System.Text.Encoding.ASCII.GetString(status_txt.text);
+                        status_text_timeout = 3f;
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
                     {
@@ -280,7 +289,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ACK)
                     {
-                        myWorld.StatusText("mission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type);
+                        status_text = "\nmission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type;
+                        status_text_timeout = 3f;
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.ATT_POS_MOCAP)
                     {
@@ -589,7 +599,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         var neu_vel = new Vector3(-vel.x, vel.z, vel.y);
         var vel_info = neu_vel.ToString("F2");
 
-        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + pos_info + "\n" + vel_info);
+        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + pos_info + "\n" + vel_info + status_text);
         if (selected)
         {
             Vector2 sz = selectedStyle.CalcSize(content);
