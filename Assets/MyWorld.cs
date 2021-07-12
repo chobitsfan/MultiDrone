@@ -159,9 +159,8 @@ public class MyWorld : MonoBehaviour
             y = float.Parse(inputFieldY.text);
             z = float.Parse(inputFieldZ.text);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Debug.LogError(e);
             return;
         }
         foreach (var drone in drones)
