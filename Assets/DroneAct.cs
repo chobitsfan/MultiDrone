@@ -41,6 +41,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     float att_pos_update_int = 10f;
     string status_text = "";
     float status_text_timeout = 0f;
+    const float STATUS_TEXT_CD = 4f;
 
     // Start is called before the first frame update
     void Start()
@@ -105,7 +106,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                         var status_txt = (MAVLink.mavlink_statustext_t)msg.data;
                         //Debug.Log(System.Text.Encoding.ASCII.GetString(status_txt.text));
                         status_text = "\n" + System.Text.Encoding.ASCII.GetString(status_txt.text);
-                        status_text_timeout = 3f;
+                        status_text_timeout = STATUS_TEXT_CD;
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
                     {
@@ -271,6 +272,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                                 };
                                 byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ACK, cmd);
                                 sock.SendTo(data, myproxy);
+                                status_text = "\nmission dl ok";
+                                status_text_timeout = STATUS_TEXT_CD;
                                 //Debug.Log("send MISSION_ACK");
                             }
                         }
@@ -290,7 +293,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ACK)
                     {
                         status_text = "\nmission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type;
-                        status_text_timeout = 3f;
+                        status_text_timeout = STATUS_TEXT_CD;
                     }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.ATT_POS_MOCAP)
                     {
