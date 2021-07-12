@@ -683,6 +683,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         if (selected)
         {
             upload_mission.Clear();
+            mission_chk_points.Clear();
             foreach (var csv_line in csv_lines)
             {
                 var wp = csv_line.Split(',');
@@ -704,6 +705,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             autocontinue = byte.Parse(wp[11])
                         };
                         upload_mission.Add(mission_item);
+                        if (mission_item.command == 93) //MAV_CMD_NAV_DELAY
+                        {
+                            mission_chk_points.Add(mission_item.seq);
+                        }
                     }
                     catch (System.Exception)
                     {
