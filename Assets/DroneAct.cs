@@ -90,9 +90,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             {
                 recvBytes = sock.Receive(buf); //Receive will read the FIRST queued datagram
             }
-            catch (SocketException e)
+            catch (SocketException)
             {
-                Debug.LogWarning("socket err " + e.ErrorCode);
+                //Debug.LogWarning("socket err " + e.ErrorCode);
+                break;
             }
             if (recvBytes > 0)
             {

@@ -120,7 +120,7 @@ public partial class MAVLink
 
         public MAVLinkMessage ReadPacket(byte[] buffer)
         {
-            if (buffer[0] != MAVLink.MAVLINK_STX && buffer[0] != MAVLINK_STX_MAVLINK1) return null;
+            if ((buffer[0] != MAVLink.MAVLINK_STX) && (buffer[0] != MAVLINK_STX_MAVLINK1)) return null;
 
             MAVLinkMessage message = new MAVLinkMessage(buffer);
 
