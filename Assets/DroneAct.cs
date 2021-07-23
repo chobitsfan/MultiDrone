@@ -42,10 +42,22 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     string status_text = "";
     float status_text_timeout = 0f;
     const float STATUS_TEXT_CD = 4f;
+    static string mocap_ip = "";
 
     // Start is called before the first frame update
     void Start()
     {
+        if (mocap_ip.Equals(""))
+        {
+            try
+            {
+                mocap_ip = System.IO.File.ReadAllText("mocap_ip.txt").Trim();
+            }
+            catch (System.Exception)
+            {
+                mocap_ip = "127.0.0.1";
+            }
+        }            
         selectedStyle = new GUIStyle { normal = new GUIStyleState { background = MakeTex(Color.green) } };
         selected = false;
         cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
@@ -55,8 +67,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         {
             Blocking = false
         };
-        sock.Bind(new IPEndPoint(IPAddress.Loopback, 17500 + DroneID));
-        myproxy = new IPEndPoint(IPAddress.Loopback, 17500);
+        sock.Bind(new IPEndPoint(IPAddress.Any, 17500 + DroneID));
+        myproxy = new IPEndPoint(IPAddress.Parse(mocap_ip), 17500);
         wp = GameObject.Instantiate(Waypoint, Vector3.zero, Quaternion.identity);
         wp.SetActive(false);
     }
