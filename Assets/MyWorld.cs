@@ -69,7 +69,7 @@ public class MyWorld : MonoBehaviour
             bool all_waiting = false;
             foreach (var drone in drones)
             {
-                if (drone.apm_mode >= 0)
+                if (drone.IsAuto())
                 {
                     if (drone.waiting_in_chk_point)
                     {
@@ -129,7 +129,7 @@ public class MyWorld : MonoBehaviour
         GL.LoadPixelMatrix();
 
         GL.Begin(GL.LINES);
-        GL.Color(Color.blue);
+        GL.Color(Color.red);
         Vector3 pos = Camera.main.WorldToScreenPoint(new Vector3(0, 0, 0));
         GL.Vertex3(pos.x, pos.y, 0);
         pos = Camera.main.WorldToScreenPoint(new Vector3(-1, 0, 0));
@@ -138,7 +138,7 @@ public class MyWorld : MonoBehaviour
         //GL.Vertex3(-1, 0, 0);
 
         GL.Begin(GL.LINES);
-        GL.Color(Color.red);
+        GL.Color(Color.blue);
         pos = Camera.main.WorldToScreenPoint(new Vector3(0, 0, 0));
         GL.Vertex3(pos.x, pos.y, 0);
         pos = Camera.main.WorldToScreenPoint(new Vector3(0, 0, 1));
