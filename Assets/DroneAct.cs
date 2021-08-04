@@ -43,6 +43,8 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     float status_text_timeout = 0f;
     const float STATUS_TEXT_CD = 4f;
     static string mocap_ip = "";
+    bool mission_uploading = false;
+    float send_wp_count_timeout = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -95,6 +97,16 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 status_text = "";
             }
         }
+        if (send_wp_count_timeout > 0)
+        {
+            send_wp_count_timeout -= Time.deltaTime;
+            if (send_wp_count_timeout <= 0)
+            {
+                send_wp_count_timeout = 2;
+                SendMissionCount((ushort)upload_mission.Count);
+            }
+        }
+
         while (sock.Available > 0)
         {
             int recvBytes = 0;
@@ -311,23 +323,37 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                             }
                         }
                     }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST)
+                    else if ((msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST) || (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT))
                     {
+                        send_wp_count_timeout = 0;
                         var seq = ((MAVLink.mavlink_mission_request_t)msg.data).seq;
                         byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
                         sock.SendTo(data, myproxy);
-                    }
-                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_INT)
-                    {
-                        var seq = ((MAVLink.mavlink_mission_request_int_t)msg.data).seq;
-                        byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT, upload_mission[seq]);
-                        sock.SendTo(data, myproxy);
-                    }
-                    /*else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ACK)
-                    {
-                        status_text = "\nmission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type;
+                        status_text = "\nsending wp " + seq;
                         status_text_timeout = STATUS_TEXT_CD;
-                    }*/
+                    }
+                    else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_ACK)
+                    {
+                        if (mission_uploading)
+                        {
+                            mission_uploading = false;
+                            if (((MAVLink.mavlink_mission_ack_t)msg.data).type == 0)
+                            {
+                                status_text = "\nflight plan received";
+                                status_text_timeout = STATUS_TEXT_CD;
+                            }
+                            else
+                            {
+                                status_text = "\nmission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type;
+                                status_text_timeout = STATUS_TEXT_CD;
+                            }
+                        }
+                        else
+                        {
+                            status_text = "\nmission ack " + ((MAVLink.mavlink_mission_ack_t)msg.data).type;
+                            status_text_timeout = STATUS_TEXT_CD;
+                        }
+                    }
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.ATT_POS_MOCAP)
                     {
                         att_pos_update_int = 0f;
@@ -754,7 +780,14 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     }                   
                 }
             }
-            if (upload_mission.Count > 0) SendMissionCount((ushort)upload_mission.Count);
+            if (upload_mission.Count > 0)
+            {
+                SendMissionCount((ushort)upload_mission.Count);
+                mission_uploading = true;
+                status_text = "\nsending wp count";
+                status_text_timeout = STATUS_TEXT_CD;
+                send_wp_count_timeout = 2;
+            }
             return true;
         }
         return false;
