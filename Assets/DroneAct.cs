@@ -627,6 +627,20 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
         return false;
     }
 
+    public void RebootFC()
+    {
+        if (selected)
+        {
+            MAVLink.mavlink_command_long_t cmd = new MAVLink.mavlink_command_long_t
+            {
+                command = (ushort)MAVLink.MAV_CMD.PREFLIGHT_REBOOT_SHUTDOWN,
+                param1 = 1
+            };
+            byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, cmd);
+            sock.SendTo(data, myproxy);
+        }
+    }
+
     public void OnPointerClick(PointerEventData eventData)
     {
         //Debug.Log("OnPointerClick " + DroneID);

@@ -252,6 +252,14 @@ public class MyWorld : MonoBehaviour
         }
     }
 
+    public void RebootFC()
+    {
+        foreach (var drone in drones)
+        {
+            drone.RebootFC();
+        }
+    }
+
     public void StatusText(string text)
     {
         LogText.text = text;
