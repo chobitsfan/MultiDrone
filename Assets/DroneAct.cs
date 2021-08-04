@@ -45,6 +45,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     static string mocap_ip = "";
     bool mission_uploading = false;
     float send_wp_count_timeout = 0;
+    float mission_set_current_timeout = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -106,7 +107,22 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 SendMissionCount((ushort)upload_mission.Count);
             }
         }
-
+        if (mission_set_current_timeout > 0)
+        {
+            mission_set_current_timeout -= Time.deltaTime;
+            if (mission_set_current_timeout <= 0)
+            {
+                mission_set_current_timeout = 0.2f;
+                MAVLink.mavlink_mission_set_current_t cmd = new MAVLink.mavlink_mission_set_current_t
+                {
+                    target_system = 0,
+                    target_component = 0,
+                    seq = (ushort)nxt_wp_seq
+                };
+                byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
+                sock.SendTo(data, myproxy);
+            }
+        }
         while (sock.Available > 0)
         {
             int recvBytes = 0;
@@ -226,6 +242,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                     else if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MISSION_CURRENT)
                     {
                         mis_cur_rcved = true;
+                        mission_set_current_timeout = 0;
                         cur_mis_seq = ((MAVLink.mavlink_mission_current_t)msg.data).seq;
                         //Debug.Log("rcv MISSION_CURRENT " + cur_mis_seq);
                         if (armed)
@@ -240,6 +257,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                                 };
                                 byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
                                 sock.SendTo(data, myproxy);
+                                mission_set_current_timeout = 0.2f;
                             }
                             else if (mission_chk_points.Contains(cur_mis_seq))
                             {
@@ -443,6 +461,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
             byte[] data = mavlinkParse.GenerateMAVLinkPacket10(MAVLink.MAVLINK_MSG_ID.MISSION_SET_CURRENT, cmd);
             sock.SendTo(data, myproxy);
             nxt_wp_seq = cur_mis_seq + 1;
+            mission_set_current_timeout = 0.2f;
             Debug.Log("NextWP " + nxt_wp_seq);
         }
     }
