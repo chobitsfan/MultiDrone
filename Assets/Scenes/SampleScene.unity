@@ -438,6 +438,11 @@ PrefabInstance:
       propertyPath: DroneID
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
+        type: 3}
+      propertyPath: LogText
+      value: 
+      objectReference: {fileID: 381147379}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06525dd752f3c41478a23d42e31b172d, type: 3}
 --- !u!1001 &187232367
@@ -532,6 +537,11 @@ PrefabInstance:
       propertyPath: DroneID
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
+        type: 3}
+      propertyPath: LogText
+      value: 
+      objectReference: {fileID: 381147379}
     - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
         type: 3}
       propertyPath: AlertMsg
@@ -829,6 +839,11 @@ PrefabInstance:
       propertyPath: DroneID
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
+        type: 3}
+      propertyPath: LogText
+      value: 
+      objectReference: {fileID: 381147379}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06525dd752f3c41478a23d42e31b172d, type: 3}
 --- !u!1 &307207688
@@ -2952,6 +2967,11 @@ PrefabInstance:
       propertyPath: DroneID
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
+        type: 3}
+      propertyPath: LogText
+      value: 
+      objectReference: {fileID: 381147379}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06525dd752f3c41478a23d42e31b172d, type: 3}
 --- !u!1 &1230743159
@@ -3878,6 +3898,11 @@ PrefabInstance:
       propertyPath: DroneID
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
+        type: 3}
+      propertyPath: LogText
+      value: 
+      objectReference: {fileID: 381147379}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06525dd752f3c41478a23d42e31b172d, type: 3}
 --- !u!1 &1463773239
@@ -4170,6 +4195,11 @@ PrefabInstance:
       propertyPath: DroneID
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 9058673917746201955, guid: 06525dd752f3c41478a23d42e31b172d,
+        type: 3}
+      propertyPath: LogText
+      value: 
+      objectReference: {fileID: 381147379}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06525dd752f3c41478a23d42e31b172d, type: 3}
 --- !u!1 &1718004576

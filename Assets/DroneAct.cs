@@ -11,6 +11,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     public GameObject Waypoint;
     [System.NonSerialized]
     public int apm_mode = -1;
+    public UnityEngine.UI.Text LogText;
     [System.NonSerialized]
     public bool waiting_in_chk_point = false;
 
@@ -26,7 +27,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     GameObject wp = null;
     Vector3 lastPos = Vector3.zero;
     Vector3 vel = Vector3.zero;
-    bool tracking = false;
+    bool presence = false;
     bool pos_tgt_local_rcved = false;
     bool mis_cur_rcved = false;
     //bool mis_item_reached_rcved = false;
@@ -46,6 +47,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     bool mission_uploading = false;
     float send_wp_count_timeout = 0;
     float mission_set_current_timeout = 0;
+    bool tracked = false;
 
     // Start is called before the first frame update
     void Start()
@@ -89,7 +91,10 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
     // Update is called once per frame
     void Update()
     {
-        att_pos_update_int += Time.deltaTime;
+        if (att_pos_update_int <= 5)
+        {
+            att_pos_update_int += Time.deltaTime;
+        }
         if (status_text_timeout > 0f)
         {
             status_text_timeout -= Time.deltaTime;
@@ -398,16 +403,33 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 }
             }
         }
-        if (att_pos_update_int > 5f)
+        if (tracked)
         {
-            tracking = false;
-            att_pos_update_int = 5f;
+            if (att_pos_update_int > 1)
+            {
+                tracked = false;
+                var unity_pos = transform.localPosition;
+                var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
+                var pos_info = neu_pos.ToString("F2");
+                LogText.text = "MAV" + DroneID + " lost track " + pos_info + " " + System.DateTime.Now.ToString("HH:mm:ss");
+            }
         }
         else
         {
-            tracking = true;
+            if (att_pos_update_int <= 1)
+            {
+                tracked = true;
+            }
         }
-        if (tracking)
+        if (att_pos_update_int > 5f)
+        {
+            presence = false;
+        }
+        else
+        {
+            presence = true;
+        }
+        if (presence)
         {
             vel_update_int += Time.deltaTime;
             if (vel_update_int > 0.5f)
@@ -417,7 +439,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
                 vel_update_int = 0f;
             }
         }
-        if (!tracking)
+        if (!presence)
         {
             if (MyDroneModel.activeSelf)
             {
@@ -688,18 +710,26 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     private void OnGUI()
     {
-        if (!tracking) return;
+        if (!presence) return;
 
         Vector3 pos = cam.WorldToScreenPoint(gameObject.transform.position);
 
-        var unity_pos = transform.localPosition;
-        var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
-        var pos_info = neu_pos.ToString("F2");
+        GUIContent content;
+        if (tracked)
+        {
+            var unity_pos = transform.localPosition;
+            var neu_pos = new Vector3(-unity_pos.x, unity_pos.z, unity_pos.y);
+            var pos_info = neu_pos.ToString("F2");
 
-        var neu_vel = new Vector3(-vel.x, vel.z, vel.y);
-        var vel_info = neu_vel.ToString("F2");
+            var neu_vel = new Vector3(-vel.x, vel.z, vel.y);
+            var vel_info = neu_vel.ToString("F2");
 
-        GUIContent content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + pos_info + "\n" + vel_info + status_text);
+            content = new GUIContent("MAV" + DroneID + "\n" + (MAVLink.COPTER_MODE)apm_mode + "\n" + pos_info + "\n" + vel_info + status_text);
+        }
+        else
+        {
+            content = new GUIContent("MAV" + DroneID + "\nlost track" + status_text);
+        }
         if (selected)
         {
             Vector2 sz = selectedStyle.CalcSize(content);
@@ -733,7 +763,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     private void OnRenderObject()
     {
-        if (!tracking) return;
+        if (!presence) return;
 
         CreateLineMaterial();
         // Apply the line material
@@ -770,7 +800,7 @@ public class DroneAct : MonoBehaviour, IPointerClickHandler
 
     public void Selected()
     {
-        if (!tracking) return;
+        if (!presence) return;
 
         selected = true;
     }
